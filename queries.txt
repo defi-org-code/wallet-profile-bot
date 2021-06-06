@@ -1,0 +1,14 @@
+{
+ pairs(where:{id: "0x45b485d6e659bb1a2c4b4fb22a6984364a044850"}){
+  	id token0{symbol}
+  	id token1{symbol}
+  	txCount
+  	reserveUSD
+  	volumeToken0
+  	volumeToken1
+  	totalSupply
+	}
+  
+}
+
+

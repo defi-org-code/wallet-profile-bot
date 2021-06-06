@@ -1,0 +1,35 @@
+{
+  "monkey1":{  
+    "enter":{      
+      "holdersMin": 20,
+      "holdersMax": 100,
+      "poolMinSupply":1000      
+    },
+    "exit":{
+      "gainMax": 0.5,
+      "loseMax": 0.2
+       }
+  },
+  "yuval":{  
+    "enter":{      
+      "holdersMin": 20,
+      "holdersMax": 70,
+      "poolMinSupply":250      
+    },
+    "exit":{
+      "gainMax": 0.2,
+      "loseMax": 0.1
+    }
+  },
+  "doron":{  
+    "enter":{      
+      "holdersMin": 10,
+      "holdersMax": 100,
+      "poolMinSupply":50      
+    },
+    "exit":{
+      "gainMax": 0.9,
+      "loseMax": 0.7
+    }
+  }
+}
