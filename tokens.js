@@ -4,7 +4,8 @@ const fs = require('fs');
 const ethplorer = require('./ethplorer');
 const HolderTrack = require('./holderTrack');
 const BLOCKS_PER_DAY = 6524;
-const maxMon = process.env.MAX_TOKEN_MON? parseInt(process.env.MAX_TOKEN_MON) : 10;
+//const config.maxToken = process.env.MAX_TOKEN_MON? parseInt(process.env.MAX_TOKEN_MON) : 10;
+const config = require('./config');
 const LOOKBACK_DAYS = process.env.LOOKBACK_DAYS? parseInt(process.env.LOOKBACK_DAYS) : 14;
 
 const dg = require('./dgraph');
@@ -172,8 +173,8 @@ function Tokens(PREFIX, mon, wallets, counter){
     // t.outVol = 0;
     //t.inVolUsd = 0;
     //t.outVolUsd = 0;
-    t.swapCount = 0;    
-    t.txVolume = 0;    
+    //t.swapCount = 0;    
+    //t.txVolume = 0;    
     //t.transfers = 0;  reset inside
   }
   /////////////////////////////////////
@@ -262,7 +263,7 @@ function Tokens(PREFIX, mon, wallets, counter){
     cur.pair.lpPast =  cur.pair.holderTrack.count(false);
 
     if(newHolders)
-      await wallets.check(newHolders);
+      /*await dont wait - blocking*/ wallets.check(newHolders);
   }
   /////////////////////////////////////
   async function updateToken(cur, latestBlock){    
@@ -316,7 +317,7 @@ function Tokens(PREFIX, mon, wallets, counter){
     cur.transfers = cur.holderTrack.lastTransfers;
     
     if(newHolders)
-      await wallets.check(newHolders);
+      /*await*/ wallets.check(newHolders);
     // console.log(`${cur.symbol} get Transfers from ${cur.updatedBlock}-${latestBlock}\t last ${latestBlock-cur.updatedBlock}`);
     // const transfers = await pastEvents.getTransfersFromPara(contract, cur.updatedBlock, latestBlock);
     // if(transfers){
@@ -357,7 +358,7 @@ function Tokens(PREFIX, mon, wallets, counter){
     return null;
   }
   function full(){
-    return maxMon && Object.keys(data).length >= maxMon;
+    return config.maxToken && Object.keys(data).length >= config.maxToken;
   }
   
   // /////////////////////////////////////
@@ -460,7 +461,7 @@ function Tokens(PREFIX, mon, wallets, counter){
     pair.holderTrack = new HolderTrack(pair.name, contractOf(pair.id), parseInt(pair.createdAtBlockNumber), counter);
     let newHolders = await pair.holderTrack.update(latestBlock);
     if(newHolders)
-      await wallets.check(newHolders);    
+      /*await*/ wallets.check(newHolders);    
     pair.lpCount = pair.holderTrack.count(true);
     if(pair.lpCount < 2){
       counter.addStat('token.LPCountLow');
@@ -601,7 +602,7 @@ function Tokens(PREFIX, mon, wallets, counter){
     // addTokenMetric(metrics, t,  "outVol");
     // addTokenMetric(metrics, t,  "outVolUsd");
 
-    addTokenMetric(metrics, t,  "txVolume");
+    //addTokenMetric(metrics, t,  "txVolume");
     addTokenMetric(metrics, t,  "transfers");
 
     // add holders metric
