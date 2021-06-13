@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "@mycrypto/eth-scan": "^3.1.2",
+    "axios": "^0.21.1",
     "console-stamp": "^0.2.9",
     "erc-20-abi": "^1.0.0",
     "erc20": "0.0.0",
