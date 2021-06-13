@@ -93,7 +93,7 @@ async function getTransfersFrom(contract, fromBlock, latestBlock, returnOnFirstE
 }
 
 async function getTransfersFromPara(contract, fromBlock, latestBlock, returnOnFirst){
-  console.log(`getTransfersFromPara total ${fromBlock}-${latestBlock}`)
+  //console.log(`getTransfersFromPara total ${fromBlock}-${latestBlock}`)
   let latest = latestBlock? latestBlock : await web3.eth.getBlockNumber();    
   if( latest <= fromBlock ){
     return; //resolve(nil);
@@ -128,7 +128,7 @@ async function getTransfersFromPara(contract, fromBlock, latestBlock, returnOnFi
     });
     // CLEAR!
     batches = [];
-    console.log(`getTransfersFromPara aprox day batchDone ${batchStart}-${end}`);
+    //console.log(`getTransfersFromPara aprox day batchDone ${batchStart}-${end}`);
     if (res !== null){
       for(let arr of res)
         if(arr.length){
