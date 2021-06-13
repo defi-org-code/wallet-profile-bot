@@ -1,7 +1,7 @@
 ///////////////////////////
 function Counter(client, PREFIX){
   ///////////////////////////
-  metrics = {};
+  let metrics = {};
   ///////////////////////////
   function set(path, val){
     metrics[PREFIX + '.' + path] = val;
