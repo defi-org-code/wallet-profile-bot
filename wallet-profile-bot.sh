@@ -5,6 +5,7 @@
 # export MAX_TOKEN_MON=100
 # export VERSION=1_3
 # export WALLET_BATCH_SIZE=5
+
 export PRODUCTION=1
 
 node main.js
