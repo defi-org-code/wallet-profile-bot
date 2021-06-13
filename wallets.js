@@ -1,12 +1,16 @@
 //const web3 = require('./web3Provider');
 const fs = require('fs');
-const fetch = require("node-fetch");
+//const fetch = require("node-fetch");
+const config = require('./config');
+const timeout = require('./timeout');
+const axios = require('axios');
 let web3 = require('./web3Provider');
+const { count } = require('console');
 const MEGA_HOLDER_BTC = process.env.MEGA_HOLDER_BTC? parseInt(process.env.MEGA_HOLDER_BTC) : 5000;
-
 const walletAPI = process.env.WALLET || "http://localhost:3000//wallet2";
-const WALLET_BATCH_SIZE = parseInt(process.env.WALLET_BATCH_SIZE || 5);
+//const WALLET_BATCH_SIZE = parseInt(process.env.WALLET_BATCH_SIZE || 5);
 const CACHE_FILENAME = './cache/wallets.json';
+const isProduction = process.env.PRODUCTION==1;
 
 //const WALLET_REDIS = process.env.WALLET_REDIS || "redis://localhost:6379/";
 //const SKIP_REDIS = process.env.SKIP_REDIS? process.env.SKIP_REDIS=="1" : false;
@@ -39,8 +43,10 @@ const std = (arr, mu) => {
 };
 
 /////////////////////////////////////
-function Wallet(ttl, counter){  
+function Wallet(counter, config){  
   let data = {};  
+  let working = false;
+  let knownFields = ['lastUpdate','address'];
   
   /////////////////////////////////////
   function load(){
@@ -73,23 +79,21 @@ function Wallet(ttl, counter){
   }
   
   /////////////////////////////////////
-  async function check(addresses, sourceToken){
-    // TODO: resume
-    console.log("wallets:check temporarely disabled")
-    return;
-
+  async function check(addresses, sourceToken){    
     for( a of addresses ){
+      // limit addresses in debug    
+      if (!isProduction && Object.keys(data).length > 1000){
+        return ;
+      }
+
       // add address
       if(!data[a]){
         data[a] = {
-          blncETH:0,
-          tokens:{},
-          totalUSD:0,
-          totalETH:0,
-          totalBTC:0,
-          tokenDiversity:0,
-          tokenCount:0,
-          updated:false,        
+          lastUpdate:null          
+        }
+        // DEBUG
+        if (!isProduction){
+          data[a].address = a;
         }
         counter.addStat("wallet.newAddress");
         // update newly added wallets only
@@ -97,7 +101,7 @@ function Wallet(ttl, counter){
       }
     }
     // update all expired wallets in batches
-    await update();
+    /*await*/ update();
   }
   /////////////////////////////////////
   // function isUpdated(address){
@@ -114,32 +118,25 @@ function Wallet(ttl, counter){
   //   }
   //   return w.tokens[tokenID] != undefined;
   // }
-  function getTokenInfoOf(tokenID, address){
-    const w = data[address];
-    if(!w){
-      console.error(`${address} not found`);
-      counter.addError('wallet.addressNotFound');
-      return null;
-    }
+  // function getTokenInfoOf(tokenID, address){
+  //   const w = data[address];
+  //   if(!w){
+  //     console.error(`${address} not found`);
+  //     counter.addError('wallet.addressNotFound');
+  //     return null;
+  //   }
 
-    if(!w.updated) {      
-      counter.addStat('wallet.adressNotUpdated');
-      return null;
-    }
-    if(!w.tokens) {      
-      counter.addError('wallet.adressHasNoTokens');
-      return null;
-    }
-    return w.tokens[tokenID];
-  }
-  /////////////////////////////////////
-  const fetchParams = {
-    method: 'GET',
-    headers: {        
-      'Accept': 'application/json',
-    }
-  };
-  
+  //   if(!w.updated) {      
+  //     counter.addStat('wallet.adressNotUpdated');
+  //     return null;
+  //   }
+  //   if(!w.tokens) {      
+  //     counter.addError('wallet.adressHasNoTokens');
+  //     return null;
+  //   }
+  //   return w.tokens[tokenID];
+  // }
+  ///////////////////////////////////// 
   // async function redisGet2(address){
   //   console.log(address);
   //   redis.hgetall(address, (err, res)=>{
@@ -147,145 +144,144 @@ function Wallet(ttl, counter){
   //   });
   // }
   /////////////////////////////////////
-  async function updateWallet(address){
+  function updateWallet(address){
+    counter.addStat('wallet.update');
     let wallet = data[address];
-    // get from chain
-    // let wei = await web3.eth.getBalance(address).catch(err=>{console.error('getBalance '+err)});
-    // if (wei){
-    //   const blnc = web3.utils.fromWei(wei, 'ether');
-    //   if (!isNaN(blnc))
-    //     wallet.blncETH =  parseFloat(blnc);
-    // }
-
-    // get nonce
-    wallet.nonce = await web3.eth.getTransactionCount(address).catch((e)=>{
-      console.error(e);
-      counter.addError('wallet.nonceFail');
-      wallet.nonce = null;
-    });      
-
-    // get from REDIS directly first 
-    let res = null;
-    // if (!SKIP_REDIS){
-    //   res = await timeout(1000, redisGet('balnace2:'+address)).catch((error)=>{
-    //     console.error(`redis ${error}`);
-    //     // might be a timeout error
-    //     if(error.message == 'TIMEOUT'){        
-    //       counter.addError('wallet.redisTimeout');
-    //     }else{        
-    //       counter.addError('wallet.redisError');
-    //     }        
-    //   });
-    //   if(!res)
-    //     counter.addStat('wallet.redisNoRes');
-    // }
-
-    // API ////////////////////////////////////
-    if(!res){
-      counter.addStat('wallet.apiStart');
-      // get wallet from API
-      const url = walletAPI + address;
-      res = await timeout(3000, fetch(url, fetchParams)).catch(function(error) {
-        console.error(`wallet2 ${address} api-error:${error.message}`);
-        // might be a timeout error
-        if(error.message == 'TIMEOUT'){        
-          counter.addError('wallet.apiTimeout');
-        }else{        
-          counter.addError('wallet.apiError');
-        }
-      });
-
-      if(!res){
-        // no need to measure/print twice
-        // console.error(`wallet2 ${address} noRes, didn't update`);
-        // counter.addError('wallet.apiNoRes');
-        return;
-      }
-      if(!res.ok){
-        console.error(`wallet2 ${address} not-ok, didn't update`);
-        counter.addError('wallet.apiNotOK');
-        return;
-      }
-      
-      // further parsing
-      res = await res.json().catch(e=>console.error('res.json err: '+err));
-      if(res.error){                  
-        if(res.error.indexOf("X Empty Balance")> -1){
-          counter.addStat('wallet.apiZeroBalance');                  
-        }
-        else{
-          console.error(`wallet2 ${address} res-error:${res.error}`);
-          counter.addError('wallet.apiResError');
-        }        
-        return;
-      }
-      counter.addStat('wallet.apiResOK');
-    }
-        
-    try {     
-      //console.log(`wallet2 ${address} UPDATING`);             
-      wallet.totalUSD = res.totalUsd || parseFloat(res.TotalUSD);
-      wallet.totalETH = res.totalEth || parseFloat(res.TotalETH);
-      wallet.totalBTC = res.totalBtc || parseFloat(res.TotalBTC);
-      wallet.updated = true;
-      wallet.lastUpdate = Date.now();
-      // WHats This?
-      if (res.TokensSTR){
-        res.items = JSON.parse(res.TokensSTR);
-      }
-      // Mega Holder
-      if(wallet.totalBTC > MEGA_HOLDER_BTC){
-        console.log(`mega holder BTC: ${parseInt(wallet.totalBTC)}\t${address}`);
-        counter.addStat('wallet.newMega');
-      }
-      if (res.items){
-        counter.addStat('wallet.updateHasItems');
-        //console.debug(`wallet updated ${address}`);
-        wallet.maxDiversity = res.items? Math.max(wallet.tokenDiversity, res.items.length) : 0;
-        wallet.curDiversity = res.items.length; // current diversity
-        //wallet.tokens = JSON.parse(JSON.stringify(res.items));
-        for(let item of res.items){
-          if(item.tokenInfo.address)
-            wallet.tokens[item.tokenInfo.address] = item;
-          else{
-            console.error(`update wallet ${address} item.tokenInfo.address is missing`);
-            counter.addError('wallet.apiNoTokenInfo');
+    // get nonce TODO: resume
+    // wallet.nonce = await web3.eth.getTransactionCount(address).catch((e)=>{
+    //   console.error(e);
+    //   counter.addError('wallet.nonceFail');
+    //   wallet.nonce = null;
+    // });
+    // doron score
+    return axios({
+      method: 'get',
+      url: 'http://34.134.236.209:3000/wallet/' + address,
+      //url: 'http://34.134.236.209:3000/test1',
+      timeout: config.walletTimeout * 1000    // seconds timeout      
+    })
+    .then(res => {
+      if (res.status === 200){
+        /* handle the response */
+        for (field in res.data){
+          if(!res.data[field]){
+            counter.addError('wallet.null_'+field);
           }
+          else{
+            counter.addStat('wallet.apiResOK');
+            wallet.lastUpdate = Date.now();                        
+            //console.log("+++++++++ wallet updated 200");
+          }
+          wallet[field] = res.data[field]? res.data[field] : -1;        
         }
-      }      
-    }catch(e){
-      console.error(`update wallet ${address} exception: ${e}`);
-      counter.addError('wallet.apiException');      
-    }    
+      }
+      else{
+        counter.addError("wallet.apiStatus_"+res.status)
+      }
+    })
+    .catch(error => {
+      if(error.code === 'ECONNABORTED')
+        counter.addError("wallet.apiTimeout");
+      else
+        counter.addError("wallet."+error.code);
+        
+      console.error('axios', error);
+    });    
   }
+ 
+
   /////////////////////////////////////
   function expired(address){
     const w = data[address];
     if(!w.lastUpdate)
       return true;
 
-    return (Date.now() - w.lastUpdate) > ttl;
+    const diff =( Date.now() - w.lastUpdate ) / 1000;
+    if(diff > config.walletSecondsTTL)
+      console.log('diff ttl', diff, config.walletSecondsTTL);
+
+    return diff > config.walletSecondsTTL;
   }
   /////////////////////////////////////
   async function update(){
-    console.log("wallet update start ======================")
-    let count = 0;
-    let batch = [];
+    if(working){
+      counter.addStat("wallet.updateReEnter");
+      return ;
+    }
+    working= true;       
+    let arr = []
+    
+    // collect expired
     for(address in data){
       if(expired(address)){
-        batch.push(updateWallet(address));
-        count++;
+        arr.push(address);
+        counter.addStat("wallet.expired");
       }
-      if (batch.length >= WALLET_BATCH_SIZE){
-        await Promise.all(batch);
-        batch = [];
+      else{
+        counter.addStat("wallet.up2date");
 
-        if(count && count % 100 === 0)
-          console.log(`${count} wallets have been updated`);
-      }      
+      }
     }
-    console.log(`${count}/${Object.keys(data).length} wallets update finished`);
+    if(!arr.length){
+      working = false;
+      console.log("all wallets are up tp date")
+      counter.addStat("wallet.noExpired");
+      return;
+    }
 
+    console.log(`wallet.updateAll start - ${arr.length}/${Object.keys(data).length} are expired =========================`)
+
+    counter.addStat("wallet.updateAll");
+    await executeBatch(arr, 0);
+
+    // arr=[]
+    // for(address in data){
+    //   if(expired(address)){
+    //     arr.push(address);        
+    //   }
+    // }
+    working = false;
+    console.log(`wallet.updateAll end ${Object.keys(data).length}  =========================`)
+  }
+  // async function testAsync(){
+  //   console.log("*** testAsync");
+
+  // }
+  /////////////////////////////////////
+  async function executeBatch(arr, count){    
+    console.log(`wallet execute batch ${count}/${arr.length}`);
+    // create promise batch
+    let batch = [];
+    let i = 0;
+    for( i=0; i < config.walletBatchSize && count < arr.length; ++i){
+      batch.push(await updateWallet(arr[i]));
+      //batch.push(await testAsync());
+      
+      count++;
+    }
+    
+    // block execution
+    //console.log("* promiseAll before: " + batch.length);
+    await Promise.all(batch);
+    //console.log("* promiseAll after");
+    
+    counter.addStat('wallet.executeBatch');
+    if(count && count % 100 === 0){
+      console.log(`${count}/${arr.length} wallets have been updated`);
+    }
+    
+    // stop condition
+    if (count >= arr.length){
+      console.log(`${count}/${arr.length} wallets update finished stop condition!`);      
+      return;
+    }
+
+    
+    await executeBatch(arr, count);
+    
+
+ 
+    
     // ////////////////////////
     // console.log(`Get Balance of ${Object.keys(data).length} wallets Start`);
     // let count = 0;
@@ -308,43 +304,55 @@ function Wallet(ttl, counter){
     //save();        
   }
   /////////////////////////////////////
-  function appendMetricsOf(addresses, metrics, prefix){
-    // lust of balances for stats
-    let ETHVal = [];
-    let BTCVal = [];
-    let USDVal = [];
-    let nonce = [];
+  function appendMetricsOf(addresses, metrics, prefix){    
     // how many token each holder has, for avg calc 
-    let maxDiversArr = [];
-    let curDiversArr = [];
+    // let maxDiversArr = [];
+    // let curDiversArr = [];
+    let arrs = {};
 
     let megaHolders = 0;
     for (a of addresses){
       let w = data[a];      
-      if (w && w.updated){
-        if (w.totalBTC > 0 && w.totalBTC < MEGA_HOLDER_BTC){
-          ETHVal.push(w.totalETH);
-          BTCVal.push(w.totalBTC);
-          USDVal.push(w.totalUSD);          
-          maxDiversArr.push(w.maxDiversity);
-          curDiversArr.push(w.curDiversity);
-          if(w.nonce)
-            nonce.push(w.nonce);            
-        }else{
-          megaHolders++;
+      if (w && w.lastUpdate){
+        for (field in w){
+          if(typeof w[field] === 'number' && knownFields.indexOf(field) == -1 ){
+            let arr = arrs[field];
+            if(!arr)
+              arr = arrs[field] = [];
+            if(w[field] && w[field] != -1)
+              arr.push(w[field]);
+          }
         }
+        // if (w.totalBTC > 0 && w.totalBTC < MEGA_HOLDER_BTC){
+        //   ETHVal.push(w.totalETH);
+        //   BTCVal.push(w.totalBTC);
+        //   USDVal.push(w.totalUSD);          
+        //   maxDiversArr.push(w.maxDiversity);
+        //   curDiversArr.push(w.curDiversity);
+        //   if(w.nonce)
+        //     nonce.push(w.nonce);            
+        // }else{
+        //   megaHolders++;
+        // }
+      }
+    }
+
+    for (let field in arrs){
+      let arr = arrs[field];
+      if(arr.length){
+        appendArrStats(field, arr, metrics, prefix);
       }
     }
         
-    appendArrStats("valETH", ETHVal, metrics, prefix);
-    appendArrStats("valBTC", BTCVal, metrics, prefix);
-    appendArrStats("valUSD", USDVal, metrics, prefix);
-    appendArrStats("nonce", nonce, metrics, prefix); // no val.
+    // appendArrStats("valETH", ETHVal, metrics, prefix);
+    // appendArrStats("valBTC", BTCVal, metrics, prefix);
+    // appendArrStats("valUSD", USDVal, metrics, prefix);
+    // appendArrStats("nonce", nonce, metrics, prefix); // no val.
 
     //$version.mon.$token.holders.curDiversityAvg
-    metrics[prefix+'.holders.'+'maxDiversityAvg'] = maxDiversArr.length? sum(maxDiversArr) / maxDiversArr.length : 0;
-    metrics[prefix+'.holders.'+'curDiversityAvg'] = curDiversArr.length? sum(maxDiversArr) / maxDiversArr.length : 0;        
-    metrics[prefix+'.holders.'+'megaCount'] = megaHolders;
+    // metrics[prefix+'.holders.'+'maxDiversityAvg'] = maxDiversArr.length? sum(maxDiversArr) / maxDiversArr.length : 0;
+    // metrics[prefix+'.holders.'+'curDiversityAvg'] = curDiversArr.length? sum(maxDiversArr) / maxDiversArr.length : 0;        
+    // metrics[prefix+'.holders.'+'megaCount'] = megaHolders;
   }
   /////////////////////////////////////
   function appendArrStats(name, arr, metrics, prefix){
@@ -367,8 +375,8 @@ function Wallet(ttl, counter){
   return {    
     update: update,
     check:check,
-    appendMetricsOf:appendMetricsOf,
-    getTokenInfoOf:getTokenInfoOf
+    appendMetricsOf:appendMetricsOf
+    //getTokenInfoOf:getTokenInfoOf
   }
 }
 
