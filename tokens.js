@@ -2,7 +2,8 @@ const erc20 = require('erc-20-abi')
 let web3 = require('./web3Provider');
 const fs = require('fs');
 const ethplorer = require('./ethplorer');
-const HolderTrack = require('./holderTrack');
+//const HolderTrack = require('./holderTrack');
+const HolderTrackBQ = require('./holderTrackBQ');
 const BLOCKS_PER_DAY = 6524;
 //const config.maxToken = process.env.MAX_TOKEN_MON? parseInt(process.env.MAX_TOKEN_MON) : 10;
 const config = require('./config');
@@ -313,8 +314,8 @@ function Tokens(PREFIX, mon, wallets, counter){
 
     // get past events - async CHAIN
     //let contract = contractOf(cur.id);
-    let newHolders = await cur.holderTrack.update(latestBlock);
-    cur.transfers = cur.holderTrack.lastTransfers;
+    let newHolders = await cur.holderTrack.update(latestBlock,  cur.decimals);
+    //cur.transfers = cur.holderTrack.lastTransfers;
     
     if(newHolders)
       /*await*/ wallets.check(newHolders);
@@ -458,7 +459,9 @@ function Tokens(PREFIX, mon, wallets, counter){
       return false;
     
     // count liquidity providers with positive balance
-    pair.holderTrack = new HolderTrack(pair.name, contractOf(pair.id), parseInt(pair.createdAtBlockNumber), counter);
+    //pair.holderTrack = new HolderTrack(pair.name, contractOf(pair.id), parseInt(pair.createdAtBlockNumber), counter);
+    const uniV2LPdecimals = 18;
+    pair.holderTrack = new HolderTrackBQ(pair.name, pair.id, parseInt(pair.createdAtTimestamp), uniV2LPdecimals, counter);
     let newHolders = await pair.holderTrack.update(latestBlock);
     if(newHolders)
       /*await*/ wallets.check(newHolders);    
@@ -508,7 +511,7 @@ function Tokens(PREFIX, mon, wallets, counter){
     resetToken(t);
 
     // add holders
-    t.holderTrack = new HolderTrack(t.symbol, contractOf(t.id), parseInt(pair.createdAtBlockNumber), counter);
+    t.holderTrack = new HolderTrackBQ(t.symbol, t.id, parseInt(pair.createdAtTimestamp), null, counter);
     // WILL BE UPDATED LATER
     // let newHolders = await t.holderTrack.update(latestBlock);
     // if(newHolders)
