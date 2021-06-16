@@ -6,7 +6,7 @@ const config = require('./config');
 //var client = graphite.createClient('plaintext://localhost:2003/');
 const grphClient = graphite.createClient(config.graphiteUrl);
 
-const VERSION = "2_1";
+const VERSION = "2_2";
 const isProduction = process.env.PRODUCTION==1;
 const COUNTER_PREFIX = `walletProfileBot.${VERSION}.${isProduction? 'production':'debug'}`
 const counter = require("./counter")(grphClient, COUNTER_PREFIX);
@@ -29,7 +29,8 @@ const swaps = require("./swaps")(Monitor(1000 * 60 * 5), tokens, counter);
 async function next(){
   try {
     // update
-    console.log("+++ +++ +++ interval")
+    //console.log("+++ +++ +++ interval")
+
     await swaps.update();
     await tokens.update();
 

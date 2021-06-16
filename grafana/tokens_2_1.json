@@ -273,7 +273,7 @@
       "targets": [
         {
           "refId": "A",
-          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.pairReserveUSD, '$interval', 'avg', false), 2)"
+          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.pairReserveUSD, '$interval', 'avg', false), 4)"
         }
       ],
       "thresholds": [],
@@ -461,7 +461,7 @@
       "targets": [
         {
           "refId": "A",
-          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.pairLpCount, '$interval', 'avg', false), 2)"
+          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.pairLpCount, '$interval', 'avg', false), 4)"
         }
       ],
       "thresholds": [],
@@ -555,7 +555,7 @@
       "targets": [
         {
           "refId": "A",
-          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.pairTxCount, '$interval', 'avg', false), 2)"
+          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.pairTxCount, '$interval', 'avg', false), 4)"
         }
       ],
       "thresholds": [],
@@ -649,7 +649,7 @@
       "targets": [
         {
           "refId": "A",
-          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.pairLpPast, '$interval', 'avg', false), 2)"
+          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.pairLpPast, '$interval', 'avg', false), 4)"
         }
       ],
       "thresholds": [],
@@ -1026,7 +1026,7 @@
       "targets": [
         {
           "refId": "A",
-          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.pairReserveETH, '$interval', 'avg', false), 2)"
+          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.pairReserveETH, '$interval', 'avg', false), 4)"
         }
       ],
       "thresholds": [],
@@ -1217,7 +1217,7 @@
         {
           "hide": false,
           "refId": "A",
-          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.holders.$holdersVal.sum, '$interval', 'avg', false), 2)",
+          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.holders.$holdersVal.sum, '$interval', 'avg', false), 4)",
           "textEditor": false
         }
       ],
@@ -1313,7 +1313,7 @@
         {
           "hide": false,
           "refId": "B",
-          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.holders.$holdersVal.max, '$interval', 'max', false), 2)",
+          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.holders.$holdersVal.max, '$interval', 'max', false), 4)",
           "textEditor": false
         }
       ],
@@ -1505,7 +1505,7 @@
         {
           "hide": false,
           "refId": "B",
-          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.holders.curDiversityAvg, '$interval', 'avg', false), 2)",
+          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.holders.curDiversityAvg, '$interval', 'avg', false), 4)",
           "textEditor": true
         }
       ],
@@ -1601,7 +1601,7 @@
         {
           "hide": false,
           "refId": "B",
-          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.holders.$holdersVal.avg, '$interval', 'avg', false), 2)",
+          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.holders.$holdersVal.avg, '$interval', 'avg', false), 4)",
           "textEditor": true
         }
       ],
@@ -1697,7 +1697,7 @@
         {
           "hide": false,
           "refId": "B",
-          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.holders.$holdersVal.med, '$interval', 'avg', false), 2)",
+          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.holders.$holdersVal.med, '$interval', 'avg', false), 4)",
           "textEditor": false
         }
       ],
@@ -1792,7 +1792,7 @@
         {
           "hide": false,
           "refId": "A",
-          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.holders.nonce.avg, '$interval', 'avg', false), 2)",
+          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.holders.nonce.avg, '$interval', 'avg', false), 4)",
           "textEditor": false
         }
       ],
@@ -1888,13 +1888,13 @@
         {
           "hide": true,
           "refId": "A",
-          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.ethplorer.price.USD, '$interval', 'avg', false), 2)",
+          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.ethplorer.price.USD, '$interval', 'avg', false), 4)",
           "textEditor": true
         },
         {
           "hide": false,
           "refId": "B",
-          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.ethplorer.price.USD, '10m', 'sum', false), 2)",
+          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.ethplorer.price.USD, '10m', 'sum', false), 4)",
           "textEditor": false
         }
       ],
@@ -1989,7 +1989,7 @@
       "targets": [
         {
           "refId": "A",
-          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.txCount, '$interval', 'avg', false), 2)",
+          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.txCount, '$interval', 'avg', false), 4)",
           "textEditor": false
         }
       ],
@@ -2085,7 +2085,7 @@
         {
           "hide": false,
           "refId": "B",
-          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.holders.megaCount, '$interval', 'max', false), 2)",
+          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.holders.megaCount, '$interval', 'max', false), 4)",
           "textEditor": false
         }
       ],
@@ -2180,7 +2180,7 @@
       "targets": [
         {
           "refId": "A",
-          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.pairTotalSupply, '$interval', 'avg', false), 2)"
+          "target": "aliasByNode(summarize(walletProfileBot.$version.$build.token.$token.pairTotalSupply, '$interval', 'avg', false), 4)"
         }
       ],
       "thresholds": [],
