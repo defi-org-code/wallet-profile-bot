@@ -3,11 +3,12 @@ let web3 = require('./web3Provider');
 const fs = require('fs');
 const ethplorer = require('./ethplorer');
 //const HolderTrack = require('./holderTrack');
-const HolderTrackBQ = require('./holderTrackBQ');
-const BLOCKS_PER_DAY = 6524;
+//const HolderTrackBQ = require('./holderTrackBQ');
+const HolderTrackBX = require('./holderTrackBX');
+//const BLOCKS_PER_DAY = 6524;
 //const config.maxToken = process.env.MAX_TOKEN_MON? parseInt(process.env.MAX_TOKEN_MON) : 10;
 const config = require('./config');
-const LOOKBACK_DAYS = process.env.LOOKBACK_DAYS? parseInt(process.env.LOOKBACK_DAYS) : 14;
+//const LOOKBACK_DAYS = process.env.LOOKBACK_DAYS? parseInt(process.env.LOOKBACK_DAYS) : 14;
 
 const dg = require('./dgraph');
 const { time } = require('console');
@@ -178,64 +179,7 @@ function Tokens(PREFIX, mon, wallets, counter){
     //t.txVolume = 0;    
     //t.transfers = 0;  reset inside
   }
-  /////////////////////////////////////
-  // async function addHolder(token, address){
-  //   address = address.toLowerCase();
-  //   if(token.holders.indexOf(address) === -1){     
-  //     token.holders.push(address);
-
-  //     counter.addStat("token.addHolder");
-
-  //     // notify wallet monitor
-  //     await wallets.check([address], token.id);
-  //   }
-  // }
-  // /////////////////////////////////////
-  // function verifyHolder(token, address){
-  //   address = address.toLowerCase()
-  //   const indx = token.holders.indexOf(address);
-  //   if( indx > -1){     
-  //     const info = wallets.getTokenInfoOf(token.id, address);
-  //     if(info && typeof info.balance != undefined && info.balance <= 0){        
-  //       console.log(`${token.symbol} holder was VERFIED and removed ${address}`);
-  //       counter.addStat("token.rmvHolder");
-  //       token.holders.splice(indx, 1);        
-  //     }
-  //   }
-  //   else console.error(`${token.name} ${address} not found in holders`)
-  // }
-  // /////////////////////////////////////
-  // function rmvHolder(token, address){
-  //   address = address.toLowerCase()
-  //   const indx = token.holders.indexOf(address);
-  //   if( indx > -1){         
-  //     console.log(`${token.symbol} holder was removed ${address}`);
-  //     token.holders.splice(indx, 1);
-  //   }    
-  // }
-  /////////////////////////////////////
-  function contractOf(id){
-    id = id.toLowerCase();
-    if(!contracts[id]){
-      contracts[id] = new web3.eth.Contract(erc20, id);  
-    }
-    return contracts[id];
-  }  
-  /////////////////////////////////////
-  // async function existedBefore(cur, days){        
-  //   //create contract      
-  //   let contract = contractOf(cur.id);
-    
-  //   //check if there are transfer a day before winow       
-  //   const returnOnFirstEvent = true;
-  //   let evntsBefore = await pastEvents.getTransfersFromPara(contract, cur.updatedBlock - BLOCKS_PER_DAY * days, cur.updatedBlock, returnOnFirstEvent);
-  //   if(!evntsBefore){      
-  //     console.log("`${cur.symbol} getTransfersPara failed - presume didnt exist (start monitor)");
-  //     counter.addStat("token.noTransferBefore");
-  //     return false;
-  //   }    
-  //   return (evntsBefore.length > 0);      
-  // }
+  
 
   /////////////////////////////////////
   async function updatePairInfo(cur, latestBlock){
@@ -461,7 +405,7 @@ function Tokens(PREFIX, mon, wallets, counter){
     // count liquidity providers with positive balance
     //pair.holderTrack = new HolderTrack(pair.name, contractOf(pair.id), parseInt(pair.createdAtBlockNumber), counter);
     const uniV2LPdecimals = 18;
-    pair.holderTrack = new HolderTrackBQ(pair.name, pair.id, parseInt(pair.createdAtTimestamp), uniV2LPdecimals, counter);
+    pair.holderTrack = new HolderTrackBX(pair.name, pair.id, parseInt(pair.createdAtTimestamp), uniV2LPdecimals, counter);
     let newHolders = await pair.holderTrack.update(latestBlock);
     if(newHolders)
       /*await*/ wallets.check(newHolders);    
@@ -511,7 +455,7 @@ function Tokens(PREFIX, mon, wallets, counter){
     resetToken(t);
 
     // add holders
-    t.holderTrack = new HolderTrackBQ(t.symbol, t.id, parseInt(pair.createdAtTimestamp), null, counter);
+    t.holderTrack = new HolderTrackBX(t.symbol, t.id, parseInt(pair.createdAtTimestamp), null, counter);
     // WILL BE UPDATED LATER
     // let newHolders = await t.holderTrack.update(latestBlock);
     // if(newHolders)
