@@ -1,23 +1,9 @@
-//const web3 = require('./web3Provider');
+
 const fs = require('fs');
-//const fetch = require("node-fetch");
-const config = require('./config');
-const timeout = require('./timeout');
 const axios = require('axios');
-let web3 = require('./web3Provider');
 const { count } = require('console');
-const MEGA_HOLDER_BTC = process.env.MEGA_HOLDER_BTC? parseInt(process.env.MEGA_HOLDER_BTC) : 5000;
-const walletAPI = process.env.WALLET || "http://localhost:3000//wallet2";
-//const WALLET_BATCH_SIZE = parseInt(process.env.WALLET_BATCH_SIZE || 5);
 const CACHE_FILENAME = './cache/wallets.json';
 const isProduction = process.env.PRODUCTION==1;
-
-//const WALLET_REDIS = process.env.WALLET_REDIS || "redis://localhost:6379/";
-//const SKIP_REDIS = process.env.SKIP_REDIS? process.env.SKIP_REDIS=="1" : false;
-
-//const redis = require("redis").createClient(WALLET_REDIS,{auth_pass:"lambo2020"});
-//const redisGet = promisify(redis.hgetall).bind(redis);
-
 
 /////////////////////////////////////
 const asc = arr => arr.sort((a, b) => a - b);
