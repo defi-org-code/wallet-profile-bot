@@ -205,7 +205,7 @@ function Tokens(PREFIX, mon, wallets, counter){
     let newHolders = await cur.pair.holderTrack.update(latestBlock);
     // count liquidity providers with positive balance
     cur.pair.lpCount =  cur.pair.holderTrack.count(true);
-    cur.pair.lpPast =  cur.pair.holderTrack.count(false);
+    //cur.pair.lpPast =  cur.pair.holderTrack.count(false);
 
     if(newHolders)
       /*await dont wait - blocking*/ wallets.check(newHolders);
@@ -541,7 +541,7 @@ function Tokens(PREFIX, mon, wallets, counter){
     var metrics = {};
     
     // add calculated metrics
-    addTokenMetric(metrics, t,  "swapCount");
+    //addTokenMetric(metrics, t,  "swapCount");
 
     // deprecated
     // addTokenMetric(metrics, t,  "inVol");
@@ -550,7 +550,7 @@ function Tokens(PREFIX, mon, wallets, counter){
     // addTokenMetric(metrics, t,  "outVolUsd");
 
     //addTokenMetric(metrics, t,  "txVolume");
-    addTokenMetric(metrics, t,  "transfers");
+    //addTokenMetric(metrics, t,  "transfers");
 
     // add holders metric
     addTokenHolderMetrics(metrics, t);
@@ -564,7 +564,7 @@ function Tokens(PREFIX, mon, wallets, counter){
     addPairMetric(metrics, t, "reserveUSD");
 
     addPairMetric(metrics, t, "lpCount");
-    addPairMetric(metrics, t, "lpPast");
+    //addPairMetric(metrics, t, "lpPast");
     addPairMetric(metrics, t, "txCount");
             
     t.pairPriceChange = t.firstPrice? t.pair.price / t.firstPrice -1 : 0;
@@ -594,8 +594,11 @@ function Tokens(PREFIX, mon, wallets, counter){
     //client.write(metrics, Date.now(), function(err) {
     client.write(metrics, function(err) {
       // if err is null, your data was sent to graphite!
-      if(err)
+      if(err){
+        console.log(metrics);
         console.error(err);
+        counter.addError("token.sendTokenMetrics");
+      }
       // else
       //   console.log(metrics);   
     });  
