@@ -6,7 +6,7 @@ const config = require('./config');
 //var client = graphite.createClient('plaintext://localhost:2003/');
 const grphClient = graphite.createClient(config.graphiteUrl);
 
-const VERSION = "2_2";
+const VERSION = "2_3";
 const isProduction = process.env.PRODUCTION==1;
 const COUNTER_PREFIX = `walletProfileBot.${VERSION}.${isProduction? 'production':'debug'}`
 const counter = require("./counter")(grphClient, COUNTER_PREFIX);
@@ -51,7 +51,7 @@ async function next(){
     console.error(e);
   }
   // 1 min production -  0.5 min debug
-  setTimeout(next, 1000 * 60 * (isProduction? 1 : 0.5 ));
+  setTimeout(next, 1000 * (isProduction? 60 : 10 ));  
 }
 
 if (require.main === module) {  
