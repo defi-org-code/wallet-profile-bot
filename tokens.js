@@ -11,7 +11,7 @@ const config = require('./config');
 //const LOOKBACK_DAYS = process.env.LOOKBACK_DAYS? parseInt(process.env.LOOKBACK_DAYS) : 14;
 
 const dg = require('./dgraph');
-const { time } = require('console');
+const { time, count } = require('console');
 const { send } = require('process');
 const CACHE_FILENAME = './cache/tokens.json';
 const CACHE_PAIR_FILENAME = './cache/pairs.json';
@@ -179,8 +179,6 @@ function Tokens(PREFIX, mon, wallets, counter){
     //t.txVolume = 0;    
     //t.transfers = 0;  reset inside
   }
-  
-
   /////////////////////////////////////
   async function updatePairInfo(cur, latestBlock){
     //update POOL PAIR info from graph
@@ -284,8 +282,7 @@ function Tokens(PREFIX, mon, wallets, counter){
     // update token price - coingeko?
 
     // update pair 
-    updatePairInfo(cur, latestBlock);
-          
+    updatePairInfo(cur, latestBlock);          
     return true;
   }
   /////////////////////////////////////
@@ -302,58 +299,11 @@ function Tokens(PREFIX, mon, wallets, counter){
     console.log(`Unrecognized stable in pair ${s.pair.token0.symbol}-${s.pair.token1.symbol}`);
     return null;
   }
+  /////////////////////////////////////
   function full(){
     return config.maxToken && Object.keys(data).length >= config.maxToken;
   }
-  
-  // /////////////////////////////////////
-  // async function enumTokenTransfers(cur, transfers, calcVolume){    
-  //   // if (!transfers.length){
-  //   //   // nothing to update
-  //   //   console.error(`no transfers since block ${since}`)
-  //   //   return false;
-  //   // }
-  //   // if(!transfers || transfers[0] == undefined){
-  //   //   console.error("getTransfersPara failed");
-  //   //   return false;
-  //   // }    
-  //   let dict = {};
-  //   // iterate
-  //   counter.addStat("token.balanceFromTransfer");
-  //   transfers.forEach( (e)=> {      
-  //     try{        
-  //       balanceFromTransfer(dict, cur.id, e.returnValues)
-  //       if (calcVolume){
-  //         if( cur.decimals)
-  //           cur.txVolume += parseFloat(e.returnValues.value / (10 ** cur.decimals) );
-  //         else
-  //           counter.addError("token.noDecimal");
-  //       }
-  //     }
-  //     catch(e){
-  //       counter.addError("token.transfersIterException");
-  //       console.error('enumTokenTransfers iteration exception: '+e);
-  //     }
-  //   });
-  //   // stats
-  //   // let plus = [];
-  //   // let minus = [];
-  //   // let zero = [];
-  //   // let univ2 = [];
-  //   for( let address in dict ){      
-  //     // if (address == "0xf49144e61c05120f1b167e4b4f59cf0a5d77903f"){
-  //     //   console.log("uni");
-  //     // }else{
-  //     if (dict[address][cur.id] > 0){
-  //       addHolder(cur, address);
-  //     }
-  //     // need to cook this as it was valid only during transfers since creation
-  //     // else{
-  //     //   rmvHolder(cur, address);
-  //     // }                     
-  //   }    
-  // }
-  
+    
   /////////////////////////////////////
   async function check(pair, sender, latestBlock){
     /////////////////////////////
@@ -416,36 +366,6 @@ function Tokens(PREFIX, mon, wallets, counter){
       return;
     }
     
-    // set update for pair creation or lookback
-    // t.updatedBlock =  latestBlock - (BLOCKS_PER_DAY * LOOKBACK_DAYS);
-    // if(pair.createdAtBlockNumber)
-    //   t.updatedBlock = parseInt(pair.createdAtBlockNumber);
-
-    // // get token info
-    // t.ethplorer = await ethplorer.getAddressInfo(t.id);
-    // if(t.ethplorer?.contractInfo?.transactionHash){
-    //   let tx = await web3.eth.getTransaction(t.ethplorer.contractInfo.transactionHash).catch(e=>console.error(e));
-    //   if(tx){
-    //     t.creationBlock = tx.blockNumber;        
-    //     if(t.creationBlock < t.updatedBlock){
-    //       console.log(`${t.symbol} - older than ${LOOKBACK_DAYS} days by creation block ${t.creationBlock}`);
-    //       return;
-    //     }
-    //     //else
-    //     t.updatedBlock = t.creationBlock;
-    //   }
-    // }
-    
-    // DEPRECATED - Dont Keep old records 
-    // check if too old (3 days priot to lookback )
-    // const existed = await existedBefore(t, 3);//, latestBlock, LOOKBACK_DAYS);
-    // if (existed){
-    //   resetToken(t); // for vol fields
-    //   oldTokens[t.id] = t;
-    //   counter.addStat("token.existedBefore");
-    //   console.log(`${t.symbol} - older than ${LOOKBACK_DAYS} days`);
-    //   return false;
-    // }
     
     counter.addStat("token.startMonitor");
     console.log(`start monitor token:${t.symbol}\t${t.id}`);
@@ -455,23 +375,7 @@ function Tokens(PREFIX, mon, wallets, counter){
     resetToken(t);
 
     // add holders
-    t.holderTrack = new HolderTrackBX(t.symbol, t.id, parseInt(pair.createdAtTimestamp), null, counter);
-    // WILL BE UPDATED LATER
-    // let newHolders = await t.holderTrack.update(latestBlock);
-    // if(newHolders)
-    //   wallets.update(newHolders);
-
-    // const prevHolderLength = t.holders.length;    
-    // // get transfers first, since creation to latest-interval
-    // // rest will be done during the update
-    // const lastBlock = latestBlock - (intervalMinutes * 4); // 4 blocks per minute
-    // let transfers = await pastEvents.getTransfersFromPara(contractOf(t.id), t.updatedBlock, lastBlock);
-    // if(transfers.length){
-    //   const calcVolume = false; // will be considered during update
-    //   enumTokenTransfers(t, transfers, calcVolume);      
-    // }
-    // update latest
-    //t.updatedBlock = lastBlock;      
+    t.holderTrack = new HolderTrackBX(t.symbol, t.id, parseInt(pair.createdAtTimestamp), null, counter);    
     
     // set for interval
     await updateToken(t, latestBlock);
@@ -481,31 +385,6 @@ function Tokens(PREFIX, mon, wallets, counter){
     data[t.id] = t;
     return true; // token added
   }  
-  /////////////////////////////////////
-  // REDUNDANT and hard to track this way
-  // token0 isnt always the token
-  // volume for same token come from different pais
-  // token volume is reachable in graph
-  // function addVolume(id, inVol, sum, usd){
-  //   let token = data[id]; //|| oldTokens[id] // only new ones need to see why old dont;
-  //   if(!token)
-  //     return;
-
-  //   // if (!token){ doesnt happen
-  //   //   console.error("addVolume - How can it be???")
-  //   //   return ;
-  //   // }
-
-  //   if(inVol){
-  //     token.inVol += parseFloat(sum);
-  //     token.inVolUsd += parseFloat(usd);
-  //   }
-  //   else{
-  //     token.outVol += parseFloat(sum);
-  //     token.outVolUsd += parseFloat(usd);
-  //   }
-  //   token.swapCount ++;
-  // }
   /////////////////////////////////////
   function addTokenMetric(metrics, t, name){
     //if(t[name] > 0){ send megative values as well
@@ -518,6 +397,20 @@ function Tokens(PREFIX, mon, wallets, counter){
     metrics[PREFIX + t.symbol +'.pair'+nameCap] = t.pair[name];
   }
   /////////////////////////////////////
+  function addTokenHolderDistribution(metrics, t){
+    let dis = t.holderTrack.distribution();
+    const count = t.holderTrack.count();
+    if(!dis) {
+      return;
+    }
+
+    const prefix = PREFIX + t.symbol + ".holders_distribution.";
+    // add distrinution    
+    for(let type in dis){
+      metrics[prefix + type] = dis[type] / count;
+    }
+  }
+  /////////////////////////////////////
   function addTokenHolderMetrics(metrics, t){
     let holders = t.holderTrack.get(true);
     t.holders = holders;
@@ -527,12 +420,12 @@ function Tokens(PREFIX, mon, wallets, counter){
     }
     
     const prefix = PREFIX + t.symbol;
-    metrics[prefix +".holders.count.bot"] = holders.length;
+    metrics[prefix +".holders_count.bot"] = holders.length;
     if(t.ethplorer?.tokenInfo?.holdersCount)
-      metrics[prefix +".holders.count.ethplorer"] = t.ethplorer.tokenInfo.holdersCount;
+      metrics[prefix +".holders_count.ethplorer"] = t.ethplorer.tokenInfo.holdersCount;
 
     // add supply balance of holders - for validation should be constant
-    metrics[prefix +".holders.posBalance"] = t.holderTrack.posBalance();
+    metrics[prefix +".holders_posBalance"] = t.holderTrack.posBalance();
 
     wallets.appendMetricsOf(holders, metrics, prefix);    
   }  
@@ -554,6 +447,8 @@ function Tokens(PREFIX, mon, wallets, counter){
 
     // add holders metric
     addTokenHolderMetrics(metrics, t);
+    // add holders Type Distribution
+    addTokenHolderDistribution(metrics, t);
 
     // add pool-pair metrics    
     // addTokenMetric(metrics, t, "pairTotalSupply");
@@ -595,7 +490,6 @@ function Tokens(PREFIX, mon, wallets, counter){
     client.write(metrics, function(err) {
       // if err is null, your data was sent to graphite!
       if(err){
-        console.log(metrics);
         console.error(err);
         counter.addError("token.sendTokenMetrics");
       }
@@ -604,8 +498,7 @@ function Tokens(PREFIX, mon, wallets, counter){
     });  
   }
   /////////////////////////////////////
-  function sendMetrics(client){    
-    
+  function sendMetrics(client){
     // tokens data iteration
     for ( let id in data ){ 
       sendTokenMetrics(data[id], client);

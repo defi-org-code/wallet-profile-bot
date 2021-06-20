@@ -71,6 +71,25 @@ function HolderTrack(name, contract, createdTS, decimals, counter){
     return Object.keys(holders);
   }
   /////////////////////////////////////
+  function distribution(){
+    if(!count()){    
+      console.log(`${t.symbol} holders is empty`);
+    }
+    
+    let dis = {}
+    // agg per type
+    for( let address in holders ){
+      const h = holders[address];
+      if( h.address_type){
+        if(!dis[h.address_type]){
+          dis[h.address_type] = 0;
+        }
+        dis[h.address_type] += 1;
+      }
+    }
+    return dis;
+  }
+  /////////////////////////////////////
   function posBalance(){
     let res = 0;
     for (id in holders){
@@ -84,7 +103,8 @@ function HolderTrack(name, contract, createdTS, decimals, counter){
     update:update,
     count:count,    
     get:get,
-    posBalance:posBalance
+    posBalance:posBalance,
+    distribution:distribution
   }
 }
 
