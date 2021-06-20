@@ -50,8 +50,8 @@ async function next(){
     counter.addError('main.exception');
     console.error(e);
   }
-  
-  setTimeout(next, 1000 * (isProduction? 60 : 10 ));
+  // 1 min production -  0.5 min debug
+  setTimeout(next, 1000 * 60 * (isProduction? 1 : 0.5 ));
 }
 
 if (require.main === module) {  
