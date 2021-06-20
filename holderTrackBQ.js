@@ -143,4 +143,3 @@ function test() {
   // [END bigquery_query]
   query();
 }
-test();
