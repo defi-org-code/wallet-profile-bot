@@ -6,7 +6,7 @@ const config = require('./config');
 //var client = graphite.createClient('plaintext://localhost:2003/');
 const grphClient = graphite.createClient(config.graphiteUrl);
 
-const VERSION = "2_3";
+const VERSION = "2_4";
 const isProduction = process.env.PRODUCTION==1;
 const COUNTER_PREFIX = `walletProfileBot.${VERSION}.${isProduction? 'production':'debug'}`
 const counter = require("./counter")(grphClient, COUNTER_PREFIX);
