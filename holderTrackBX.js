@@ -75,7 +75,7 @@ function HolderTrack(name, contract, createdTS, decimals, counter){
     let res = 0;
     for (id in holders){
       if(holders[id])
-        res += holders[id];
+        res += holders[id].balance;
     }
     return res;
   }
