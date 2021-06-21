@@ -72,7 +72,7 @@ if (require.main === module) {
   // start server
   const express = require('express')
   const app = express()
-  const port = 4000
+  const port = 3001
 
   app.get('/', (req, res) => {
     res.send('wallet-profile-bot OK!');
