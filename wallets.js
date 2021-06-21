@@ -227,7 +227,7 @@ function Wallet(counter, config){
   }  
   /////////////////////////////////////
   async function executeBatch(arr, count){    
-    console.log(`wallet execute batch ${count}/${arr.length}`);
+    //console.log(`wallet execute batch ${count}/${arr.length}`);
     // create promise batch
     let batch = [];
     let i = 0;
