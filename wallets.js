@@ -152,6 +152,7 @@ function Wallet(counter, config){
         for (field in res.data){
           if(!res.data[field]){
             counter.addError('wallet.null_'+field);
+            // kills the disk??? console.error(`null value in field ${field}\tfor ${address}`);
           }
           else{
             counter.addStat('wallet.apiResOK');
@@ -220,19 +221,10 @@ function Wallet(counter, config){
     counter.addStat("wallet.updateAll");
     await executeBatch(arr, 0);
 
-    // arr=[]
-    // for(address in data){
-    //   if(expired(address)){
-    //     arr.push(address);        
-    //   }
-    // }
+    
     working = false;
     console.log(`wallet.updateAll end ${Object.keys(data).length}  =========================`)
-  }
-  // async function testAsync(){
-  //   console.log("*** testAsync");
-
-  // }
+  }  
   /////////////////////////////////////
   async function executeBatch(arr, count){    
     console.log(`wallet execute batch ${count}/${arr.length}`);
@@ -308,18 +300,7 @@ function Wallet(counter, config){
             if(w[field] && w[field] != -1)
               arr.push(w[field]);
           }
-        }
-        // if (w.totalBTC > 0 && w.totalBTC < MEGA_HOLDER_BTC){
-        //   ETHVal.push(w.totalETH);
-        //   BTCVal.push(w.totalBTC);
-        //   USDVal.push(w.totalUSD);          
-        //   maxDiversArr.push(w.maxDiversity);
-        //   curDiversArr.push(w.curDiversity);
-        //   if(w.nonce)
-        //     nonce.push(w.nonce);            
-        // }else{
-        //   megaHolders++;
-        // }
+        }        
       }
     }
 
@@ -344,7 +325,7 @@ function Wallet(counter, config){
   function appendArrStats(name, arr, metrics, prefix){
     arr = asc(arr);
     const arrSum = sum(arr);
-    const arrAvg = arr.length? arrSum / arr.length : 0;
+    const arrAvg = arr.length? (arrSum / arr.length) : 0;
 
     //$version.mon.$token.holders.valETH.sum
     prefix = prefix + '.holders.' + name + '.';;    
