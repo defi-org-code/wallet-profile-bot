@@ -232,7 +232,8 @@ function Wallet(counter, config){
     let batch = [];
     let i = 0;
     for( i=0; i < config.walletBatchSize && count < arr.length; ++i){
-      batch.push(await updateWallet(arr[i]));
+      batch.push(updateWallet(arr[i]));
+      //batch.push(await updateWallet(arr[i]));
       //batch.push(await testAsync());
       
       count++;
