@@ -62,6 +62,24 @@ function Tokens(PREFIX, mon, wallets, counter){
   const intervalMinutes = mon.interval / 60000;
 
   // load cache
+  function asJson(){
+    let res = [];
+    for(let id in data){
+      const t = data[id];
+      res.push({
+        symbol:t.symbol,
+        id:t.id,
+        creationBlock:t.creationBlock,
+        holders:t.holderTrack.count(),
+        pairName:t.pair.name,
+        pairId:t.pairId,
+        totalLiquidity:t.totalLiquidity,
+        tradeVolumeUSD:t.tradeVolumeUSD
+      });
+    }
+    return res;
+  }
+  // load cache
   function load(){
     console.log('loading pairs');
     let pairs ;
@@ -524,7 +542,8 @@ function Tokens(PREFIX, mon, wallets, counter){
     //addVolume: addVolume,
     sendMetrics: sendMetrics,
     full:full,
-    data: data
+    asJson:asJson,
+    data: data,
   }
 }
 

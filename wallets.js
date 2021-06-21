@@ -343,7 +343,8 @@ function Wallet(counter, config){
   return {    
     update: update,
     check:check,
-    appendMetricsOf:appendMetricsOf
+    appendMetricsOf:appendMetricsOf,
+    size:function(){return Object.keys(data).length;}
     //getTokenInfoOf:getTokenInfoOf
   }
 }

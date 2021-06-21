@@ -65,6 +65,29 @@ if (require.main === module) {
   console.log("=========================================");
   //console.log(JSON.stringify(monkey1.options, null,2));
   console.log("=========================================");
+
+  // start iteration
   next();
+
+  // start server
+  const express = require('express')
+  const app = express()
+  const port = 4000
+
+  app.get('/', (req, res) => {
+    res.send('wallet-profile-bot OK!');
+  })
+
+  app.get('/token', (req, res) => {
+    res.json(tokens.asJson());
+  })
+
+  app.get('/wallet', (req, res) => {
+    res.send(`${wallets.size()} are being monitored`);
+  })
+
+  app.listen(port, () => {
+    console.log(`Example app listening at http://0.0.0.0:${port}`);
+  })  
 }
   
