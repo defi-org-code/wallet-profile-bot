@@ -55,8 +55,7 @@ function Tokens(PREFIX, mon, wallets, counter){
   const PREFIX_ANOT = PREFIX + ".anot.";  
   PREFIX += ".token.";
 
-  let data = {};
-  let contracts = {};
+  let data = {};  
   let oldTokens = {}; //black list of token older than X days
   let addTokens = [];
   const intervalMinutes = mon.interval / 60000;
@@ -445,10 +444,14 @@ function Tokens(PREFIX, mon, wallets, counter){
     // add supply balance of holders - for validation should be constant
     metrics[prefix +".holders_posBalance"] = t.holderTrack.posBalance();
 
-    wallets.appendMetricsOf(holders, metrics, prefix);    
+    // add holders balance distribution     
+    wallets.appendArrStats("balanceBX", t.holderTrack.balanceArr(), metrics, prefix );
+
+    // add wallet metrics
+    wallets.appendMetricsOf(holders, metrics, prefix);
   }  
   /////////////////////////////////////
-  function sendTokenMetrics(t, client){    
+  function sendTokenMetrics(t, client, inflx){    
     var metrics = {};
     
     // add calculated metrics
@@ -490,7 +493,7 @@ function Tokens(PREFIX, mon, wallets, counter){
 
     // add age
     if(t.ethplorer?.contractInfo?.timestamp){
-      t.ageHours = Math.round(Date.now() - (t.ethplorer.contractInfo.timestamp * 1000) / (1000 *3600));
+      t.ageHours = Math.round(Date.now() - (t.ethplorer.contractInfo.timestamp) / (3600));
       addTokenMetric(metrics, t, "ageHours");        
     }
     // add ETHPLORER tokenInfo
@@ -509,17 +512,27 @@ function Tokens(PREFIX, mon, wallets, counter){
       // if err is null, your data was sent to graphite!
       if(err){
         console.error(err);
-        counter.addError("token.sendTokenMetrics");
+        counter.addError("token.TknGrptWrt");
       }
       // else
       //   console.log(metrics);   
-    });  
+    }); 
+    
+    // influx write
+    // influx
+    try{
+      const points = inflx.grpht2Points(metrics);
+      inflx.writeApi.writePoints(points);
+    }
+    catch(e){
+      console.error("sendTokenMetrics influx.writePoints", e);
+    }
   }
   /////////////////////////////////////
-  function sendMetrics(client){
+  function sendMetrics(client, inflx){
     // tokens data iteration
     for ( let id in data ){ 
-      sendTokenMetrics(data[id], client);
+      sendTokenMetrics(data[id], client, inflx);
     }
     // added tokens annotations
     // add monitored new token annotations - //$PREFIX.mon.add.paiName

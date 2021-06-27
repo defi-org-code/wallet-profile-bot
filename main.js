@@ -2,14 +2,17 @@
 require('console-stamp')(console, 'yyyy-mm-dd HH:MM:ss');
 const graphite = require('graphite');
 const config = require('./config');
-
-//var client = graphite.createClient('plaintext://localhost:2003/');
 const grphClient = graphite.createClient(config.graphiteUrl);
 
-const VERSION = "2_4";
+const VERSION = "2_5";
 const isProduction = process.env.PRODUCTION==1;
-const COUNTER_PREFIX = `walletProfileBot.${VERSION}.${isProduction? 'production':'debug'}`
-const counter = require("./counter")(grphClient, COUNTER_PREFIX);
+const COUNTER_PREFIX = `walletProfileBot.${VERSION}.${isProduction? 'production':'debug'}`;
+const inflx = require("./influx")({
+  app:"walletProfileBot",
+  version:VERSION,
+  build:isProduction? 'production':'debug'
+});
+const counter = require("./counter")(grphClient, inflx, COUNTER_PREFIX);
 const Monitor = require("./monitor");
 
 // upodate every 3cd /opt/graphite/confh - don ttl=6
@@ -38,7 +41,7 @@ async function next(){
     /*await*/ wallets.update(); 
 
     // send metrics
-    tokens.sendMetrics(grphClient);
+    tokens.sendMetrics(grphClient, inflx);
     
     // update traders - and send metrics
     //tradeRoom.update(tokens.data, grphClient);
