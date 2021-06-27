@@ -304,14 +304,14 @@ function Wallet(counter, config){
         }        
       }
     }
-
+    // add dynamic arrays
     for (let field in arrs){
       let arr = arrs[field];
       if(arr.length){
         appendArrStats(field, arr, metrics, prefix);
       }
     }
-        
+            
     // appendArrStats("valETH", ETHVal, metrics, prefix);
     // appendArrStats("valBTC", BTCVal, metrics, prefix);
     // appendArrStats("valUSD", USDVal, metrics, prefix);
@@ -336,13 +336,14 @@ function Wallet(counter, config){
     metrics[prefix + 'avg'] = arrAvg;
     metrics[prefix + 'p95'] = arr.length? quantile(arr, .95) : 0;
     metrics[prefix + 'med'] = arr.length? quantile(arr, .50) : 0;
-    metrics[prefix + 'std'] = arr.length>1? std(arr, arrAvg) : 0;    
+    metrics[prefix + 'std'] = arr.length>1? std(arr, arrAvg) : 0;
   }
   
   /////////////////////////////////////
   return {    
     update: update,
     check:check,
+    appendArrStats:appendArrStats,
     appendMetricsOf:appendMetricsOf,
     size:function(){return Object.keys(data).length;}
     //getTokenInfoOf:getTokenInfoOf
@@ -351,46 +352,45 @@ function Wallet(counter, config){
 
 module.exports = Wallet;
 
-function testBlanaceOfContract(){
-
-}
 // TEST
-if (require.main === module) {
-  const Monitor = require("./monitor");
-  const VERSION = "v_" +( process.env.VERSION || "nover") + ".mon.";  
-  
-  var graphite = require('graphite');
-  const grphClient = graphite.createClient(process.env.GRAPHITE);
-  const counter = require("./counter")(grphClient);
-  
-  let wal = Wallet(Monitor(1000), counter);
+function testBlanaceOfContract(){
+  if (require.main === module) {
+    const Monitor = require("./monitor");
+    const VERSION = "v_" +( process.env.VERSION || "nover") + ".mon.";  
+    
+    var graphite = require('graphite');
+    const grphClient = graphite.createClient(process.env.GRAPHITE);
+    const counter = require("./counter")(grphClient);
+    
+    let wal = Wallet(Monitor(1000), counter);
 
-  const rndAndRich = [
-    "m",
-    "0xc923dd451dfb1fc6a4608982c6c077414da06a4d",
-     "0xbd2f0cd039e0bfcf88901c98c0bfac5ab27566e3",
-     "0x61c53d050858a5865201d0ad4d0257fe16340c39"
-  ];
-  //wal.check(rndAndRich, "XXX");
-  //wal.update().then(()=>{
-  console.log("wallet.js test start =========");
-  wal.check(rndAndRich, "XXX").then(()=>{
-  //setTimeout(()=>{
-    const prefix = VERSION + "XXX";
-    let metrics = {};
-    wal.appendMetricsOf(rndAndRich, metrics, prefix);
-    console.log(JSON.stringify(metrics,null,2));
-  }, 10000);
-  //});
-  
+    const rndAndRich = [
+      "m",
+      "0xc923dd451dfb1fc6a4608982c6c077414da06a4d",
+      "0xbd2f0cd039e0bfcf88901c98c0bfac5ab27566e3",
+      "0x61c53d050858a5865201d0ad4d0257fe16340c39"
+    ];
+    //wal.check(rndAndRich, "XXX");
+    //wal.update().then(()=>{
+    console.log("wallet.js test start =========");
+    wal.check(rndAndRich, "XXX").then(()=>{
+    //setTimeout(()=>{
+      const prefix = VERSION + "XXX";
+      let metrics = {};
+      wal.appendMetricsOf(rndAndRich, metrics, prefix);
+      console.log(JSON.stringify(metrics,null,2));
+    }, 10000);
+    //});
+  }
+    
 
-  // var data = {};
-  // for ( var i=0; i < 100; ++i){
-  //   data["0x0"+i]= {balance: 
-  //     i+1
-  //     //Math.floor(Math.random()*100)
-  //   };
-  // }  
-  // let mtrcs = metricsOf2(data);
-  // console.log(mtrcs)
+    // var data = {};
+    // for ( var i=0; i < 100; ++i){
+    //   data["0x0"+i]= {balance: 
+    //     i+1
+    //     //Math.floor(Math.random()*100)
+    //   };
+    // }  
+    // let mtrcs = metricsOf2(data);
+    // console.log(mtrcs)
 }
