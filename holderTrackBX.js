@@ -92,9 +92,18 @@ function HolderTrack(name, contract, createdTS, decimals, counter){
   /////////////////////////////////////
   function posBalance(){
     let res = 0;
-    for (id in holders){
+    for (let id in holders){
       if(holders[id])
         res += holders[id].balance;
+    }
+    return res;
+  }
+  /////////////////////////////////////
+  function balanceArr(){
+    let res = [];
+    for (let id in holders){
+      if(holders[id])
+        res.push(holders[id].balance);
     }
     return res;
   }
@@ -104,7 +113,8 @@ function HolderTrack(name, contract, createdTS, decimals, counter){
     count:count,    
     get:get,
     posBalance:posBalance,
-    distribution:distribution
+    distribution:distribution,
+    balanceArr:balanceArr,
   }
 }
 
