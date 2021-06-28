@@ -453,6 +453,7 @@ function Tokens(PREFIX, mon, wallets, counter){
   /////////////////////////////////////
   function sendTokenMetrics(t, client, inflx){    
     var metrics = {};
+    var points = [];
     
     // add calculated metrics
     //addTokenMetric(metrics, t,  "swapCount");
@@ -521,7 +522,8 @@ function Tokens(PREFIX, mon, wallets, counter){
     // influx write
     // influx
     try{
-      const points = inflx.grpht2Points(metrics);
+      //const points = inflx.grpht2Points(metrics);
+      
       inflx.writeApi.writePoints(points);
     }
     catch(e){

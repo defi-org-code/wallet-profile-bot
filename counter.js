@@ -1,10 +1,15 @@
+const {Point} = require('@influxdata/influxdb-client');
+
 ///////////////////////////
 function Counter(grft, inflx, PREFIX){
   ///////////////////////////
   let metrics = {};
+  let points = [];
+
   ///////////////////////////
   function set(path, val){
-    metrics[PREFIX + '.' + path] = val;
+    // grafite
+    metrics[PREFIX + '.' + path] = val;    
   }
   ///////////////////////////
   function add(prefix, name){
@@ -32,7 +37,26 @@ function Counter(grft, inflx, PREFIX){
       });
       // influx
       try{
-        const points = inflx.grpht2Points(metrics);
+        //const points = inflx.grpht2Points(metrics);
+        // influx
+        for(const m in metrics){          
+          const nodes = m.split('.');          
+          let measurment ='';
+          let i=5;
+          while(i < nodes.length){
+            if(measurment.length){
+              measurment += '.';
+            }
+            measurment += nodes[i++];
+          }
+          const value = metrics[m];
+          points.push(new Point(measurment).
+            tag('type', nodes[3]).
+            tag('src', nodes[4]).            
+            intField("count",  value)
+          );
+        }
+        
         inflx.writeApi.writePoints(points);
       }catch(e){
         console.error("counter influx.writePoints", e);
@@ -55,7 +79,8 @@ function Counter(grft, inflx, PREFIX){
     }
 
     // resecounter
-    metrics = {}
+    metrics = {};
+    points = [];
   }
   ///////////////////////////
   return{
