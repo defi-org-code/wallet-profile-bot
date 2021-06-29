@@ -283,7 +283,7 @@ function Wallet(counter, config){
     //save();        
   }
   /////////////////////////////////////
-  function appendMetricsOf(addresses, metrics, prefix){    
+  function appendMetricsOf(addresses, metrics, point, prefix){    
     // how many token each holder has, for avg calc 
     // let maxDiversArr = [];
     // let curDiversArr = [];
@@ -308,7 +308,7 @@ function Wallet(counter, config){
     for (let field in arrs){
       let arr = arrs[field];
       if(arr.length){
-        appendArrStats(field, arr, metrics, prefix);
+        appendArrStats(field, arr, metrics, point, prefix);
       }
     }
             
@@ -323,7 +323,7 @@ function Wallet(counter, config){
     // metrics[prefix+'.holders.'+'megaCount'] = megaHolders;
   }
   /////////////////////////////////////
-  function appendArrStats(name, arr, metrics, prefix){
+  function appendArrStats(name, arr, metrics, point, prefix){
     arr = asc(arr);
     const arrSum = sum(arr);
     const arrAvg = arr.length? (arrSum / arr.length) : 0;
@@ -337,6 +337,15 @@ function Wallet(counter, config){
     metrics[prefix + 'p95'] = arr.length? quantile(arr, .95) : 0;
     metrics[prefix + 'med'] = arr.length? quantile(arr, .50) : 0;
     metrics[prefix + 'std'] = arr.length>1? std(arr, arrAvg) : 0;
+
+    // influx
+    point.floatField(name+"_sum",  metrics[prefix + 'sum']);
+    point.floatField(name+"_max",  metrics[prefix + 'max']);
+    point.floatField(name+"_min",  metrics[prefix + 'min']);
+    point.floatField(name+"_avg",  metrics[prefix + 'avg']);
+    point.floatField(name+"_p95",  metrics[prefix + 'p95']);
+    point.floatField(name+"_med",  metrics[prefix + 'med']);
+    point.floatField(name+"_std",  metrics[prefix + 'std']);
   }
   
   /////////////////////////////////////
@@ -377,7 +386,7 @@ function testBlanaceOfContract(){
     //setTimeout(()=>{
       const prefix = VERSION + "XXX";
       let metrics = {};
-      wal.appendMetricsOf(rndAndRich, metrics, prefix);
+      wal.appendMetricsOf(rndAndRich, metrics, null, prefix);
       console.log(JSON.stringify(metrics,null,2));
     }, 10000);
     //});

@@ -1,7 +1,9 @@
-const erc20 = require('erc-20-abi')
+//const erc20 = require('erc-20-abi')
 let web3 = require('./web3Provider');
 const fs = require('fs');
 const ethplorer = require('./ethplorer');
+const {Point} = require('@influxdata/influxdb-client');
+
 //const HolderTrack = require('./holderTrack');
 //const HolderTrackBQ = require('./holderTrackBQ');
 const HolderTrackBX = require('./holderTrackBX');
@@ -403,18 +405,20 @@ function Tokens(PREFIX, mon, wallets, counter){
     return true; // token added
   }  
   /////////////////////////////////////
-  function addTokenMetric(metrics, t, name){
+  function addTokenMetric(metrics, point, t, name){
     //if(t[name] > 0){ send megative values as well
       metrics[PREFIX + t.symbol +"."+ name] = t[name];
+      point.floatField(name, t[name]);
     //}
   }
   /////////////////////////////////////
-  function addPairMetric(metrics, t, name){
+  function addPairMetric(metrics, point, t, name){
     const nameCap = name.charAt(0).toUpperCase() + name.slice(1);
     metrics[PREFIX + t.symbol +'.pair'+nameCap] = t.pair[name];
+    point.floatField("pair_"+nameCap, t.pair[name]);    
   }
   /////////////////////////////////////
-  function addTokenHolderDistribution(metrics, t){
+  function addTokenHolderDistribution(metrics, point, t){
     let dis = t.holderTrack.distribution();
     const count = t.holderTrack.count();
     if(!dis) {
@@ -424,11 +428,16 @@ function Tokens(PREFIX, mon, wallets, counter){
     const prefix = PREFIX + t.symbol + ".holders_distribution.";
     // add distrinution    
     for(let type in dis){
-      metrics[prefix + type] = dis[type] / count;
+      const f = dis[type] / count;
+      type = type.toLowerCase();
+      type = type.replace(/\s/g, '_');
+      metrics[prefix + type] = f;
+      point.floatField("holders_distribution_"+type, f);
     }
   }
+  
   /////////////////////////////////////
-  function addTokenHolderMetrics(metrics, t){
+  function addTokenHolderMetrics(metrics, point, t){
     let holders = t.holderTrack.get(true);
     t.holders = holders;
 
@@ -438,64 +447,73 @@ function Tokens(PREFIX, mon, wallets, counter){
     
     const prefix = PREFIX + t.symbol;
     metrics[prefix +".holders_count.bot"] = holders.length;
-    if(t.ethplorer?.tokenInfo?.holdersCount)
+    point.intField("holders_count_bot",  holders.length);
+
+    //addInfluxPoint(points, "holders",{symbol:t.symbol},"count_bot", holders.length);
+    if(t.ethplorer?.tokenInfo?.holdersCount){
       metrics[prefix +".holders_count.ethplorer"] = t.ethplorer.tokenInfo.holdersCount;
+      point.intField("holders_count_ethplorer",  t.ethplorer.tokenInfo.holdersCount);
+    }
 
     // add supply balance of holders - for validation should be constant
-    metrics[prefix +".holders_posBalance"] = t.holderTrack.posBalance();
+    const posBalance = t.holderTrack.posBalance()
+    metrics[prefix +".holders_posBalance"] = posBalance;
+    point.intField("holders_posBalance",  posBalance);
 
     // add holders balance distribution     
-    wallets.appendArrStats("balanceBX", t.holderTrack.balanceArr(), metrics, prefix );
+    wallets.appendArrStats("holders_balanceBX", t.holderTrack.balanceArr(), metrics, point, prefix );
 
     // add wallet metrics
-    wallets.appendMetricsOf(holders, metrics, prefix);
+    wallets.appendMetricsOf(holders, metrics, point, prefix);
   }  
   /////////////////////////////////////
   function sendTokenMetrics(t, client, inflx){    
     var metrics = {};
-    var points = [];
+    var point = new Point('token').      
+      tag('symbol', t.symbol);
+      // add fields within metric funcs .intField("count",  value)
     
     // add calculated metrics
-    //addTokenMetric(metrics, t,  "swapCount");
+    //addTokenMetric(metrics, points, t,  "swapCount");
 
     // deprecated
-    // addTokenMetric(metrics, t,  "inVol");
-    // addTokenMetric(metrics, t,  "inVolUsd");
-    // addTokenMetric(metrics, t,  "outVol");
-    // addTokenMetric(metrics, t,  "outVolUsd");
+    // addTokenMetric(metrics, points, t,  "inVol");
+    // addTokenMetric(metrics, points, t,  "inVolUsd");
+    // addTokenMetric(metrics, points, t,  "outVol");
+    // addTokenMetric(metrics, points, t,  "outVolUsd");
 
-    //addTokenMetric(metrics, t,  "txVolume");
-    //addTokenMetric(metrics, t,  "transfers");
+    //addTokenMetric(metrics, points, t,  "txVolume");
+    //addTokenMetric(metrics, points, t,  "transfers");
 
     // add holders metric
-    addTokenHolderMetrics(metrics, t);
+    addTokenHolderMetrics(metrics, point, t);
     // add holders Type Distribution
-    addTokenHolderDistribution(metrics, t);
+    addTokenHolderDistribution(metrics, point,t);
 
     // add pool-pair metrics    
-    // addTokenMetric(metrics, t, "pairTotalSupply");
-    addPairMetric(metrics, t, "totalSupply");    
-    addPairMetric(metrics, t, "volumeUSD");    
-    addPairMetric(metrics, t, "price");
-    addPairMetric(metrics, t, "reserveETH");    
-    addPairMetric(metrics, t, "reserveUSD");
+    // addTokenMetric(metrics, point, t, "pairTotalSupply");
+    addPairMetric(metrics, point, t, "totalSupply");    
+    addPairMetric(metrics, point, t, "volumeUSD");    
+    addPairMetric(metrics, point, t, "price");
+    addPairMetric(metrics, point, t, "reserveETH");    
+    addPairMetric(metrics, point, t, "reserveUSD");
 
-    addPairMetric(metrics, t, "lpCount");
-    //addPairMetric(metrics, t, "lpPast");
-    addPairMetric(metrics, t, "txCount");
+    addPairMetric(metrics, point, t, "lpCount");
+    //addPairMetric(metrics, point, t, "lpPast");
+    addPairMetric(metrics, point, t, "txCount");
             
     t.pairPriceChange = t.firstPrice? t.pair.price / t.firstPrice -1 : 0;
-    addTokenMetric(metrics, t, "pairPriceChange");
+    addTokenMetric(metrics, point, t, "pairPriceChange");
 
     // add token graph metrics
-    addTokenMetric(metrics, t, "txCount");      
-    addTokenMetric(metrics, t, "tradeVolumeUSD");
-    addTokenMetric(metrics, t, "totalLiquidity");
+    addTokenMetric(metrics, point, t, "txCount");      
+    addTokenMetric(metrics, point, t, "tradeVolumeUSD");
+    addTokenMetric(metrics, point, t, "totalLiquidity");
 
     // add age
     if(t.ethplorer?.contractInfo?.timestamp){
       t.ageHours = Math.round(Date.now() - (t.ethplorer.contractInfo.timestamp) / (3600));
-      addTokenMetric(metrics, t, "ageHours");        
+      addTokenMetric(metrics, point, t, "ageHours");        
     }
     // add ETHPLORER tokenInfo
     if(t.ethplorer?.tokenInfo?.price){
@@ -522,9 +540,8 @@ function Tokens(PREFIX, mon, wallets, counter){
     // influx write
     // influx
     try{
-      //const points = inflx.grpht2Points(metrics);
-      
-      inflx.writeApi.writePoints(points);
+      //const point = inflx.grpht2Points(metrics);      
+      inflx.writeApi.writePoint(point);
     }
     catch(e){
       console.error("sendTokenMetrics influx.writePoints", e);
