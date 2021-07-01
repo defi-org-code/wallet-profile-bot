@@ -28,12 +28,15 @@ const std = (arr, mu) => {
   return Math.sqrt(sum(diffArr) / (arr.length - 1));
 };
 
+
 /////////////////////////////////////
+
 function Wallet(counter, config){  
   let data = {};  
   let working = false;
-  let knownFields = ['lastUpdate','address'];
-  
+  // for delete when update from server
+  const knownFields = ['lastUpdate','address'];
+    
   /////////////////////////////////////
   function load(){
     console.log('loading wallets...');
@@ -148,19 +151,29 @@ function Wallet(counter, config){
     })
     .then(res => {
       if (res.status === 200){
-        /* handle the response */
+        // handle the response
         for (field in res.data){
           if(!res.data[field]){
             counter.addError('wallet.null_'+field);
             // kills the disk??? console.error(`null value in field ${field}\tfor ${address}`);
-          }
-          else{
-            counter.addStat('wallet.apiResOK');
-            wallet.lastUpdate = Date.now();                        
-            //console.log("+++++++++ wallet updated 200");
-          }
-          wallet[field] = res.data[field]? res.data[field] : -1;        
+          }          
+          // update field
+          wallet[field] = res.data[field]? res.data[field] : -1;          
         }
+        // remove fields that were not updated
+        const curFields = Object.keys(wallet);
+        const datFields= Object.keys(res.data);
+        for( let field of curFields ){
+          // if new data doesnt include old field, or new data has null for existing field
+          if( !knownFields.includes(field) &&( !datFields.includes(field) || !res.data[field] )){
+            // remove field
+            delete wallet[field];
+            counter.addStat('wallet.del_'+field);
+          }          
+        }
+
+        counter.addStat('wallet.apiResOK');
+        wallet.lastUpdate = Date.now();        
       }
       else{
         counter.addError("wallet.apiStatus_"+res.status)
@@ -322,6 +335,13 @@ function Wallet(counter, config){
     // metrics[prefix+'.holders.'+'curDiversityAvg'] = curDiversArr.length? sum(maxDiversArr) / maxDiversArr.length : 0;        
     // metrics[prefix+'.holders.'+'megaCount'] = megaHolders;
   }
+  function nrmlFloat(f){
+    if(isNaN(f)){
+      return -1;
+    }
+
+    return parseFloat(f.toFixed(8));
+  }
   /////////////////////////////////////
   function appendArrStats(name, arr, metrics, point, prefix){
     arr = asc(arr);
@@ -329,14 +349,14 @@ function Wallet(counter, config){
     const arrAvg = arr.length? (arrSum / arr.length) : 0;
 
     //$version.mon.$token.holders.valETH.sum
-    prefix = prefix + '.holders.' + name + '.';;    
-    metrics[prefix + 'sum'] = arrSum;
-    metrics[prefix + 'max'] = arr.length? arr[arr.length-1] : 0;
-    metrics[prefix + 'min'] = arr.length? arr[0] : 0;
-    metrics[prefix + 'avg'] = arrAvg;
-    metrics[prefix + 'p95'] = arr.length? quantile(arr, .95) : 0;
-    metrics[prefix + 'med'] = arr.length? quantile(arr, .50) : 0;
-    metrics[prefix + 'std'] = arr.length>1? std(arr, arrAvg) : 0;
+    prefix = prefix + '.holders.' + name + '.';
+    metrics[prefix + 'sum'] = nrmlFloat(arrSum,2);
+    metrics[prefix + 'max'] = nrmlFloat(arr.length? arr[arr.length-1] : 0);
+    metrics[prefix + 'min'] = nrmlFloat(arr.length? arr[0] : 0);
+    metrics[prefix + 'avg'] = nrmlFloat(arrAvg);
+    metrics[prefix + 'p95'] = nrmlFloat(arr.length? quantile(arr, .95) : 0);
+    metrics[prefix + 'med'] = nrmlFloat(arr.length? quantile(arr, .50) : 0);
+    metrics[prefix + 'std'] = nrmlFloat(arr.length>1? std(arr, arrAvg) : 0);
 
     // influx
     point.floatField(name+"_sum",  metrics[prefix + 'sum']);
