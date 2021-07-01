@@ -1,5 +1,6 @@
 const config = require("./config");
 const axios = require('axios');
+const burnPrefix = '0x00000000000000000000';
 
 /////////////////////////////////////
 function HolderTrack(name, contract, createdTS, decimals, counter){
@@ -39,7 +40,7 @@ function HolderTrack(name, contract, createdTS, decimals, counter){
 
         for (const h of res.data){
           holders[h.address] = h;
-          if(!oh || !oh.includes(h.address)){
+          if((!oh || !oh.includes(h.address)) && h.address.substring(0, 22) !== burnPrefix){
             newHolders.push(h.address);
           }
         }

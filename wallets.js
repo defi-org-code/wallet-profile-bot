@@ -134,6 +134,7 @@ function Wallet(counter, config){
   // }
   /////////////////////////////////////
   function updateWallet(address){
+    //console.log('start updateWallet', address);
     counter.addStat('wallet.update');
     let wallet = data[address];
     // get nonce TODO: resume
@@ -147,45 +148,60 @@ function Wallet(counter, config){
       method: 'get',
       url: 'http://34.134.236.209:3000/wallet/' + address,
       //url: 'http://34.134.236.209:3000/test1',
-      timeout: config.walletTimeout * 1000    // seconds timeout      
+      timeout: config.walletTimeout    // seconds timeout      
     })
     .then(res => {
       if (res.status === 200){
-        // handle the response
-        for (field in res.data){
-          if(!res.data[field]){
-            counter.addError('wallet.null_'+field);
-            // kills the disk??? console.error(`null value in field ${field}\tfor ${address}`);
-          }          
-          // update field
-          wallet[field] = res.data[field]? res.data[field] : -1;          
-        }
-        // remove fields that were not updated
-        const curFields = Object.keys(wallet);
-        const datFields= Object.keys(res.data);
-        for( let field of curFields ){
-          // if new data doesnt include old field, or new data has null for existing field
-          if( !knownFields.includes(field) &&( !datFields.includes(field) || !res.data[field] )){
-            // remove field
-            delete wallet[field];
-            counter.addStat('wallet.del_'+field);
-          }          
-        }
+        // if(!res.data){
+        //   console.log('no data')
+        // }
+        //console.log(res.data);
+        if (!res.data.miss){
+          // handle the response
+          for (let field in res.data){
+            if(!res.data[field]){
+              counter.addError('wallet.null_'+field);
+              // kills the disk??? console.error(`null value in field ${field}\tfor ${address}`);
+            }          
+            // update field
+            wallet[field] = res.data[field]? res.data[field] : -1;          
+          }
+          // remove fields that were not updated
+          const curFields = Object.keys(wallet);
+          const datFields= Object.keys(res.data);
+          for( let field of curFields ){
+            // if new data doesnt include old field, or new data has null for existing field
+            if( !knownFields.includes(field) &&( !datFields.includes(field) || !res.data[field] )){
+              // remove field
+              delete wallet[field];
+              counter.addStat('wallet.del_'+field);
+            }          
+          }
+          //console.log('end   updateWallet success', address);
 
-        counter.addStat('wallet.apiResOK');
-        wallet.lastUpdate = Date.now();        
+          counter.addStat('wallet.apiResOK');
+          wallet.lastUpdate = Date.now();
+        }
+        else{
+          counter.addStat('wallet.apiResMiss');
+        }
       }
       else{
+        //console.log('end   updateWallet status:', res.status, address);
         counter.addError("wallet.apiStatus_"+res.status)
       }
     })
     .catch(error => {
-      if(error.code === 'ECONNABORTED')
-        counter.addError("wallet.apiTimeout");
-      else
-        counter.addError("wallet."+error.code);
-        
-      console.error('axios', error);
+      console.log('end updateWallet error:', error.code, address);
+      if(error.code ){
+        if(error.code === 'ECONNABORTED')
+          counter.addError("wallet.apiTimeout");
+        else
+          counter.addError("wallet."+error.code);
+      }else{
+        counter.addError("wallet.unknown");
+        console.error('axios no code-', error);
+      }
     });    
   }
  
