@@ -275,7 +275,7 @@ function Wallet(counter, config){
     
     counter.addStat('wallet.executeBatch');
     if(count && count % 100 === 0){
-      console.log(`${count}/${arr.length} wallets have been updated`);
+      console.log(`${count}/${arr.length} wallets have been called for with 200 OK`);
     }
     
     // stop condition
