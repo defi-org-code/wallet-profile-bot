@@ -415,7 +415,7 @@ function Tokens(PREFIX, mon, wallets, counter){
   function addPairMetric(metrics, point, t, name){
     const nameCap = name.charAt(0).toUpperCase() + name.slice(1);
     metrics[PREFIX + t.symbol +'.pair'+nameCap] = t.pair[name];
-    point.floatField("pair_"+nameCap, t.pair[name]);    
+    point.floatField("pair_"+nameCap, t.pair[name]);
   }
   /////////////////////////////////////
   function addTokenHolderDistribution(metrics, point, t){
@@ -551,6 +551,10 @@ function Tokens(PREFIX, mon, wallets, counter){
   function sendMetrics(client, inflx){
     // tokens data iteration
     for ( let id in data ){ 
+      if(!data[id]){
+        console.error(`token ${id} is not in data!!!!---------------`);
+        counter.addError('token.noDataId');
+      }
       sendTokenMetrics(data[id], client, inflx);
     }
     // added tokens annotations
