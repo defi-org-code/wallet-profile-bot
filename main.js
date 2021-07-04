@@ -39,6 +39,7 @@ async function next(){
 
     // update wallet - NON blocking, takes ages
     /*await*/ wallets.update(); 
+    wallets.status(true); //send distribution metrics
 
     // send metrics
     tokens.sendMetrics(grphClient, inflx);
@@ -85,8 +86,19 @@ if (require.main === module) {
     res.json(tokens.asJson());
   })
 
+  // app.get('/wallet', (req, res) => {
+  //   res.send(`
+  //     ${wallets.size()} are being monitored
+  //     ${wallets.notUpdated()} are notUpdated
+  //   `);
+  // })
+
+  app.get('/wallet/dump', (req, res) => {
+    res.json(wallets.data);
+  })
+
   app.get('/wallet', (req, res) => {
-    res.send(`${wallets.size()} are being monitored`);
+    res.json(wallets.status());
   })
 
   app.listen(port, () => {
