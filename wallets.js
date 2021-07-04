@@ -183,6 +183,7 @@ function Wallet(counter, config){
           wallet.lastUpdate = Date.now();
         }
         else{
+          wallet.miss = true;
           counter.addStat('wallet.apiResMiss');
         }
       }
@@ -250,69 +251,85 @@ function Wallet(counter, config){
     counter.addStat("wallet.updateAll");
     await executeBatch(arr, 0);
 
+    // add count for each status
+    const stat = status();
+    console.log(stat);
     
     working = false;
-    console.log(`wallet.updateAll end ${Object.keys(data).length}  =========================`)
+    console.log(`wallet.updateAll end ${Object.keys(data).length}  =========================`);
   }  
   /////////////////////////////////////
-  async function executeBatch(arr, count){    
-    //console.log(`wallet execute batch ${count}/${arr.length}`);
+  async function executeBatch(arr, start){    
+    //console.log(`wallet execute batch ${start}/${arr.length}`);
     // create promise batch
-    let batch = [];
-    let i = 0;
-    for( i=0; i < config.walletBatchSize && count < arr.length; ++i){
-      batch.push(updateWallet(arr[i]));
-      //batch.push(await updateWallet(arr[i]));
-      //batch.push(await testAsync());
-      
-      count++;
+    let batch = [];    
+    let indx = start;
+
+    for(let i=0; i < config.walletBatchSize && indx < arr.length; i++, indx++){      
+      //console.log(arr[indx])
+      batch.push(updateWallet(arr[indx]));      
     }
     
     // block execution
     //console.log("* promiseAll before: " + batch.length);
-    await Promise.all(batch);
+    if(batch.length){
+      await Promise.all(batch);
+    }
     //console.log("* promiseAll after");
     
     counter.addStat('wallet.executeBatch');
-    if(count && count % 100 === 0){
-      console.log(`${count}/${arr.length} wallets have been called for with 200 OK`);
+    if(indx && indx % 100 === 0){
+      console.log(`${indx}/${arr.length} wallets have been called for with 200 OK`);
     }
     
     // stop condition
-    if (count >= arr.length){
-      console.log(`${count}/${arr.length} wallets update finished stop condition!`);      
+    if (indx >= arr.length){
+      console.log(`${indx}/${arr.length} wallets update finished stop condition!`);      
       return;
     }
 
     
-    await executeBatch(arr, count);
-    
-
- 
-    
-    // ////////////////////////
-    // console.log(`Get Balance of ${Object.keys(data).length} wallets Start`);
-    // let count = 0;
-    // let batch = [];
-    // for (address in data){      
-    //   if(batch.length < WALLET_BATCH_SIZE) {
-    //     count++;
-    //     batch.push(updateWallet(address));
-    //     counter.addStat("wallet.updateTry");
-    //   }
-    //   else{
-    //     await Promise.all(batch);
-    //     batch = [];
-    //     if(count % 10 === 0)
-    //       console.log(`${count} wallets have been updated`);
-    //   }      
-    // }
-    
+    await executeBatch(arr, indx);
+        
     // console.log(`Get Balance End`);
     //save();        
   }
   /////////////////////////////////////
-  function appendMetricsOf(addresses, metrics, point, prefix){    
+  // return dist of statuses
+  function status(count){
+    let stat={
+      pending:0,
+      neverUpdated:0,      
+      expired:0,
+      updated:0
+    }
+    // collect 
+    for(address in data){
+      const w = data[address];
+      // pending (has to be first)
+      if (w.miss === true){
+        if(count) counter.addStat('wallet.pending');
+        stat.pending += 1;
+      }
+      // never updated
+      else if(w.lastUpdate === null){
+        if(count) counter.addStat('wallet.neverUpdated');
+        stat.neverUpdated += 1;
+      }
+      // expired
+      else if(expired(address)){
+        if(count) counter.addStat('wallet.expired');
+        stat.expired += 1;
+      }
+      else{
+        if(count) counter.addStat('wallet.updated');
+        stat.updated += 1;
+      }
+    }
+    return stat
+  }
+  /////////////////////////////////////
+  function appendMetricsOf(addresses, metrics, point, prefix){
     // how many token each holder has, for avg calc 
     // let maxDiversArr = [];
     // let curDiversArr = [];
@@ -390,7 +407,9 @@ function Wallet(counter, config){
     check:check,
     appendArrStats:appendArrStats,
     appendMetricsOf:appendMetricsOf,
-    size:function(){return Object.keys(data).length;}
+    size:function(){return Object.keys(data).length;},
+    data:data,
+    status:status
     //getTokenInfoOf:getTokenInfoOf
   }
 }
