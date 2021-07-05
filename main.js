@@ -74,6 +74,7 @@ if (require.main === module) {
   //console.log(JSON.stringify(monkey1.options, null,2));
   console.log("=========================================");
 
+  // anotation
   counter.addStat("process.started");
   // start iteration
   next();

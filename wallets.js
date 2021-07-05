@@ -279,7 +279,7 @@ function Wallet(counter, config){
     //console.log("* promiseAll after");
     
     counter.addStat('wallet.executeBatch');
-    if(indx && indx % 100 === 0){
+    if(indx && indx % 1000 === 0){
       console.log(`${indx}/${arr.length} wallets have been called for with 200 OK`);
     }
     
@@ -304,6 +304,14 @@ function Wallet(counter, config){
       expired:0,
       updated:0
     }
+    // reset stat so zero is sent as well
+    if(count){
+      counter.set('wallet.pending',0);
+      counter.set('wallet.neverUpdated',0);
+      counter.set('wallet.wallet.expired',0);
+      counter.set('wallet.updated',0);
+    }
+
     // collect 
     for(address in data){
       const w = data[address];
