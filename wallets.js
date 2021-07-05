@@ -269,7 +269,7 @@ function Wallet(counter, config){
       //console.log(arr[indx])
       batch.push(updateWallet(arr[indx]));      
     }
-    console.log(`wallet execute batch ${start}-${indx}\t/ ${arr.length}`);
+    //console.log(`wallet execute batch ${start}-${indx}\t/ ${arr.length}`);
     
     // block execution
     //console.log("* promiseAll before: " + batch.length);
