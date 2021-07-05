@@ -8,7 +8,7 @@ function Influx(tags){
   const token = config.keys.influx_token;
   const org = 'xorbs';
   const bucket = config.influxDB;
-  const client = new InfluxDB({url: 'http://35.225.77.88:8086', token: token});
+  const client = new InfluxDB({url: config.influxUrl, token: token});
   const writeApi = client.getWriteApi(org, bucket);
   writeApi.useDefaultTags(tags);
  

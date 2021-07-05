@@ -232,17 +232,17 @@ function Wallet(counter, config){
     for(address in data){
       if(expired(address)){
         arr.push(address);
-        counter.addStat("wallet.expired");
+        //counter.addStat("wallet.expired");
       }
-      else{
-        counter.addStat("wallet.up2date");
+      // else{
+      //   counter.addStat("wallet.up2date");
 
-      }
+      // }
     }
     if(!arr.length){
       working = false;
       console.log("all wallets are up tp date")
-      counter.addStat("wallet.noExpired");
+      //counter.addStat("wallet.noExpired");
       return;
     }
 
@@ -260,7 +260,7 @@ function Wallet(counter, config){
   }  
   /////////////////////////////////////
   async function executeBatch(arr, start){    
-    //console.log(`wallet execute batch ${start}/${arr.length}`);
+    
     // create promise batch
     let batch = [];    
     let indx = start;
@@ -269,6 +269,7 @@ function Wallet(counter, config){
       //console.log(arr[indx])
       batch.push(updateWallet(arr[indx]));      
     }
+    console.log(`wallet execute batch ${start}-${indx}\t/ ${arr.length}`);
     
     // block execution
     //console.log("* promiseAll before: " + batch.length);

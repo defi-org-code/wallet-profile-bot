@@ -37,10 +37,13 @@ async function next(){
     await swaps.update();
     await tokens.update();
 
+    //send wallet status distribution metrics
+    // before updating expired
+    wallets.status(true); 
+
     // update wallet - NON blocking, takes ages
     /*await*/ wallets.update(); 
-    wallets.status(true); //send distribution metrics
-
+    
     // send metrics
     tokens.sendMetrics(grphClient, inflx);
     
@@ -55,7 +58,7 @@ async function next(){
     console.error(e);
   }
   // 1 min production -  0.5 min debug
-  setTimeout(next, 1000 * (isProduction? 60 : 10 ));  
+  setTimeout(next, 1000 * (isProduction? 60 : 30 ));  
 }
 
 if (require.main === module) {  
@@ -63,6 +66,7 @@ if (require.main === module) {
   console.log("VERSION", VERSION);
   console.log("WEB3_PROVIDER", config.network.ETH);
   console.log("GRAPHITE", config.graphiteUrl);
+  console.log("INFLUX", config.graphiteUrl);
   console.log("MAX_TOKEN_MON", config.maxToken );
   //console.log("WALLET_BATCH_SIZE", process.env.WALLET_BATCH_SIZE);
   console.log("MEGA_HOLDER_BTC", config.megaHolderBTC);
@@ -70,6 +74,7 @@ if (require.main === module) {
   //console.log(JSON.stringify(monkey1.options, null,2));
   console.log("=========================================");
 
+  counter.addStat("process.started");
   // start iteration
   next();
 
