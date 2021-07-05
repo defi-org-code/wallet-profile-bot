@@ -225,7 +225,7 @@ function Tokens(PREFIX, mon, wallets, counter){
     //cur.pair.lpPast =  cur.pair.holderTrack.count(false);
 
     if(newHolders)
-      /*await dont wait - blocking*/ wallets.check(newHolders);
+      /*await dont wait - blocking*/ wallets.check(newHolders, cur.pair.name);
   }
   /////////////////////////////////////
   async function updateToken(cur, latestBlock){    
@@ -279,7 +279,7 @@ function Tokens(PREFIX, mon, wallets, counter){
     //cur.transfers = cur.holderTrack.lastTransfers;
     
     if(newHolders)
-      /*await*/ wallets.check(newHolders);
+      /*await*/ wallets.check(newHolders, cur.symbol);
     // console.log(`${cur.symbol} get Transfers from ${cur.updatedBlock}-${latestBlock}\t last ${latestBlock-cur.updatedBlock}`);
     // const transfers = await pastEvents.getTransfersFromPara(contract, cur.updatedBlock, latestBlock);
     // if(transfers){
@@ -377,7 +377,7 @@ function Tokens(PREFIX, mon, wallets, counter){
     pair.holderTrack = new HolderTrackBX(pair.name, pair.id, parseInt(pair.createdAtTimestamp), uniV2LPdecimals, counter);
     let newHolders = await pair.holderTrack.update(latestBlock);
     if(newHolders)
-      /*await*/ wallets.check(newHolders);    
+      /*await*/ wallets.check(newHolders, pair.name);    
     pair.lpCount = pair.holderTrack.count(true);
     if(pair.lpCount < 2){
       counter.addStat('token.LPCountLow');

@@ -35,7 +35,7 @@ function Wallet(counter, config){
   let data = {};  
   let working = false;
   // for delete when update from server
-  const knownFields = ['lastUpdate','address'];
+  const knownFields = ['lastUpdate','address','srcTokens'];
     
   /////////////////////////////////////
   function load(){
@@ -78,7 +78,8 @@ function Wallet(counter, config){
       // add address
       if(!data[a]){
         data[a] = {
-          lastUpdate:null          
+          lastUpdate:null,
+          srcTokens:[sourceToken]
         }
         // DEBUG
         if (!isProduction){
@@ -87,6 +88,12 @@ function Wallet(counter, config){
         counter.addStat("wallet.newAddress");
         // update newly added wallets only
         //await updateWallet(a);
+      }
+      else{
+        // update held token
+        if(!data[a].srcTokens.includes(sourceToken)){
+          data[a].srcTokens.push(sourceToken);
+        }
       }
     }
     // update all expired wallets in batches
@@ -137,16 +144,13 @@ function Wallet(counter, config){
     //console.log('start updateWallet', address);
     counter.addStat('wallet.update');
     let wallet = data[address];
-    // get nonce TODO: resume
-    // wallet.nonce = await web3.eth.getTransactionCount(address).catch((e)=>{
-    //   console.error(e);
-    //   counter.addError('wallet.nonceFail');
-    //   wallet.nonce = null;
-    // });
+    
+    let url = 'http://34.134.236.209:3000/wallet/' + address;
+    url += "?tokens=" + wallet.srcTokens.join();
     // doron score
     return axios({
       method: 'get',
-      url: 'http://34.134.236.209:3000/wallet/' + address,
+      url: url,
       //url: 'http://34.134.236.209:3000/test1',
       timeout: config.walletTimeout    // seconds timeout      
     })
@@ -397,6 +401,7 @@ function Wallet(counter, config){
     metrics[prefix + 'min'] = nrmlFloat(arr.length? arr[0] : 0);
     metrics[prefix + 'avg'] = nrmlFloat(arrAvg);
     metrics[prefix + 'p95'] = nrmlFloat(arr.length? quantile(arr, .95) : 0);
+    metrics[prefix + 'p80'] = nrmlFloat(arr.length? quantile(arr, .80) : 0);
     metrics[prefix + 'med'] = nrmlFloat(arr.length? quantile(arr, .50) : 0);
     metrics[prefix + 'std'] = nrmlFloat(arr.length>1? std(arr, arrAvg) : 0);
 
@@ -406,6 +411,7 @@ function Wallet(counter, config){
     point.floatField(name+"_min",  metrics[prefix + 'min']);
     point.floatField(name+"_avg",  metrics[prefix + 'avg']);
     point.floatField(name+"_p95",  metrics[prefix + 'p95']);
+    point.floatField(name+"_p80",  metrics[prefix + 'p80']);
     point.floatField(name+"_med",  metrics[prefix + 'med']);
     point.floatField(name+"_std",  metrics[prefix + 'std']);
   }
