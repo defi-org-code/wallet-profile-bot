@@ -28,6 +28,7 @@ const swaps = require("./swaps")(Monitor(1000 * 60 * 5), tokens, counter);
 // const tradeRoom = require("./trader")(Monitor(1000 * 60 * 5));
 // tradeRoom.load('traderoom.json');
 
+///////////////////////////////////////////////////////
 // monitoring
 async function next(){
   try {
@@ -60,7 +61,11 @@ async function next(){
   // 1 min production -  0.5 min debug
   setTimeout(next, 1000 * (isProduction? 60 : 30 ));  
 }
-
+///////////////////////////////////////////////////////
+async function loadCache(){
+  await tokens.load();
+}
+///////////////////////////////////////////////////////
 if (require.main === module) {  
   console.log("============== ORBS WALLET PROFILE BOT ==============");
   console.log("VERSION", VERSION);
@@ -76,6 +81,10 @@ if (require.main === module) {
 
   // anotation
   counter.addStat("process.started");
+
+  // load cache
+  loadCache();
+
   // start iteration
   next();
 
