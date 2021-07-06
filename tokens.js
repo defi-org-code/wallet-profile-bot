@@ -75,7 +75,7 @@ function Tokens(PREFIX, mon, wallets, counter){
       res.push({
         symbol:t.symbol,
         id:t.id,
-        creationBlock:t.creationBlock,
+        //creationBlock:t.creationBlock,
         holders:t.holderTrack.count(),
         pairName:t.pair.name,
         pairId:t.pairId,
@@ -89,6 +89,7 @@ function Tokens(PREFIX, mon, wallets, counter){
   /////////////////////////////////////////////////////////
   // load cache
   async function load(){
+    return;
     try{
       let pairs = {};
       const uniV2LPdecimals = 18;
@@ -156,7 +157,7 @@ function Tokens(PREFIX, mon, wallets, counter){
       id: t.id,
       pairId: t.pair.id,
       symbol: t.symbol,
-      creationBlock: t.creationBlock,
+      //creationBlock: t.creationBlock,
       firstPrice: t.firstPrice,      
       totalLiquidity: t.totalLiquidity,
       tradeVolumeUSD: t.tradeVolumeUSD,
@@ -190,7 +191,9 @@ function Tokens(PREFIX, mon, wallets, counter){
   }
   ///////////////////////////////////////////////////////////////////
   // save cache
-  function save(){    
+  function save(){
+    return;
+
     console.log('save tokens to redis');
     // const strg = {
     //   data:data,
@@ -322,7 +325,7 @@ function Tokens(PREFIX, mon, wallets, counter){
 
     //update fields
     cur.txCount = parseInt(updt.txCount);
-    //cur.totalSupply = parseInt(updt.totalSupply);
+  //cur.totalSupply = parseInt(updt.totalSupply);
     cur.tradeVolumeUSD = parseInt(updt.tradeVolumeUSD);
     cur.totalLiquidity = parseInt(updt.totalLiquidity);
     cur.mostLiquidPairs = updt.mostLiquidPairs;
