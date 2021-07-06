@@ -4,7 +4,7 @@ const redis = require("redis");
 const isProduction = process.env.PRODUCTION==1;
 
 const client = redis.createClient({
-  url: isProduction? '34.134.236.209:6328' : 'http://localhost:6379',
+  host: isProduction? '34.134.236.209:6379' : 'http://localhost:6379',
   db: isProduction?  3 : 0,
   password: isProduction? 'admin@orbs' : ''
 });
