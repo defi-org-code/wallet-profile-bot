@@ -6,7 +6,7 @@ const {Point} = require('@influxdata/influxdb-client');
 const {nrmlFloat} = require('./numUtils');
 
 // redis + async
-const redis = require('./redis');
+//const redis = require('./redis');
 
 
 //const HolderTrack = require('./holderTrack');
@@ -325,7 +325,7 @@ function Tokens(PREFIX, mon, wallets, counter){
 
     //update fields
     cur.txCount = parseInt(updt.txCount);
-  //cur.totalSupply = parseInt(updt.totalSupply);
+    //cur.totalSupply = parseInt(updt.totalSupply);
     cur.tradeVolumeUSD = parseInt(updt.tradeVolumeUSD);
     cur.totalLiquidity = parseInt(updt.totalLiquidity);
     cur.mostLiquidPairs = updt.mostLiquidPairs;
