@@ -2,35 +2,12 @@
 const fs = require('fs');
 const axios = require('axios');
 const { count } = require('console');
+const {nrmlFloat, asc, quantile, sum, std} = require('./numUtils');
+
 const CACHE_FILENAME = './cache/wallets.json';
 const isProduction = process.env.PRODUCTION==1;
 
 /////////////////////////////////////
-const asc = arr => arr.sort((a, b) => a - b);
-/////////////////////////////////////
-const quantile = (arr, q) => {
-  const sorted = asc(arr);
-  const pos = (sorted.length - 1) * q;
-  const base = Math.floor(pos);
-  const rest = pos - base;
-  if (sorted[base + 1] !== undefined) {
-      return sorted[base] + rest * (sorted[base + 1] - sorted[base]);
-  } else {
-      return sorted[base];
-  }
-}
-/////////////////////////////////////
-const sum = arr => arr.reduce((a, b) => a + b, 0);
-    
-/////////////////////////////////////
-const std = (arr, mu) => {  
-  const diffArr = arr.map(a => (a - mu) ** 2);
-  return Math.sqrt(sum(diffArr) / (arr.length - 1));
-};
-
-
-/////////////////////////////////////
-
 function Wallet(counter, config){  
   let data = {};  
   let working = false;
@@ -218,8 +195,8 @@ function Wallet(counter, config){
       return true;
 
     const diff =( Date.now() - w.lastUpdate ) / 1000;
-    if(diff > config.walletSecondsTTL)
-      console.log('diff ttl', diff, config.walletSecondsTTL);
+    // if(diff > config.walletSecondsTTL)
+    //   console.log('diff ttl', diff, config.walletSecondsTTL);
 
     return diff > config.walletSecondsTTL;
   }
@@ -381,13 +358,7 @@ function Wallet(counter, config){
     // metrics[prefix+'.holders.'+'curDiversityAvg'] = curDiversArr.length? sum(maxDiversArr) / maxDiversArr.length : 0;        
     // metrics[prefix+'.holders.'+'megaCount'] = megaHolders;
   }
-  function nrmlFloat(f){
-    if(isNaN(f)){
-      return -1;
-    }
-
-    return parseFloat(f.toFixed(8));
-  }
+  
   /////////////////////////////////////
   function appendArrStats(name, arr, metrics, point, prefix){
     arr = asc(arr);
