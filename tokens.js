@@ -1,8 +1,13 @@
 //const erc20 = require('erc-20-abi')
 let web3 = require('./web3Provider');
 const fs = require('fs');
-const ethplorer = require('./ethplorer');
+//const ethplorer = require('./ethplorer');
 const {Point} = require('@influxdata/influxdb-client');
+const {nrmlFloat} = require('./numUtils');
+
+// redis + async
+const redis = require('./redis');
+
 
 //const HolderTrack = require('./holderTrack');
 //const HolderTrackBQ = require('./holderTrackBQ');
@@ -13,10 +18,10 @@ const config = require('./config');
 //const LOOKBACK_DAYS = process.env.LOOKBACK_DAYS? parseInt(process.env.LOOKBACK_DAYS) : 14;
 
 const dg = require('./dgraph');
-const { time, count } = require('console');
-const { send } = require('process');
-const CACHE_FILENAME = './cache/tokens.json';
-const CACHE_PAIR_FILENAME = './cache/pairs.json';
+// const { time, count } = require('console');
+// const { send } = require('process');
+//const CACHE_FILENAME = './cache/tokens.json';
+//const CACHE_PAIR_FILENAME = './cache/pairs.json';
 
 /////////////////////////////////////
 const qGetToken = `
@@ -80,90 +85,145 @@ function Tokens(PREFIX, mon, wallets, counter){
     }
     return res;
   }
+  
+  /////////////////////////////////////////////////////////
   // load cache
-  function load(){
-    console.log('loading pairs');
-    let pairs ;
-    fs.readFile(CACHE_PAIR_FILENAME, (err, jsn) => {
-      if (err){
-        counter.addError("pair.readFile");
-        return console.error('pair readFile', err);
-      }
-      pairs = JSON.parse(jsn);
-    });
-    if(!pairs)
-      return console.error('load pairs failed');
+  async function load(){
+    try{
+      let pairs = {};
+      const uniV2LPdecimals = 18;
+      // load pairs first to patch to token later
+      console.log('loading pairs');
+      let keys = await redis.async.keys("pair:*").catch(e=> console.error(e));
+      console.log(keys);
+      for(let key of keys){
+        var val = await redis.async.get(key).catch(e=> console.error(e));
+        if(val){
+          let pair = JSON.parse(val);
+          pair.holderTrack = new HolderTrackBX(pair.name, pair.id, parseInt(pair.createdAtTimestamp), uniV2LPdecimals, counter);
+          pairs[pair.id] = pair;
+        }
+      }    
+      // loading tokens second
+      console.log('loading tokens');      
+      keys = await redis.async.keys("token:*").catch(e=> console.error(e));
+      console.log(keys);
+      for(let key of keys){
+        var val = await redis.async.get(key).catch(e=> console.error(e));
+        if(val){
+          let t = JSON.parse(val);
+          // patch pair
+          let p = pairs[t.pairId];
+          if(p){
+            t.pair = p;
 
-    console.log('loading tokens');
-    fs.readFile(CACHE_FILENAME, (err, jsn) => {
-      if (err){
-        counter.addError("token.readFile");
-        return console.error('token readFile', err);
-      }
-
-      try{
-        let obj = JSON.parse(jsn.toString());
-        data = obj.data;
-        oldTokens = obj.oldTokens;
-
-        // patch pairs
-        for (let id in data){
-          let t = data[id];
-          let pair = pairs[t.pair.id];
-          if(pair)
-            t.pair = pair;
+            // create holder track          
+            t.holderTrack = new HolderTrackBX(t.symbol, t.id, parseInt(p.createdAtTimestamp), null, counter);    
+            data[t.id] = t;
+          }
+          else{
+            console.error(`failed to load token ${t.symbol} pair ${t.pairId} is missing`)
+          }
         }
       }
-      catch(e){
-        counter.addError("token.readFileParse");
-        console.error(e);
-        data = {};
-        oldTokens = {};
+      // patch tokens to pairs - after all are loaded
+      for(let id in pairs){
+        let p = pairs[id];
+        // token 0
+        const t0 = data[p.token0.id];
+        if(t0){
+          p.token0 = t0;
+        }
+        // token1
+        const t1 = data[p.token1.id];
+        if(t1){
+          p.token1 = t1;
+        }        
       }
-    });
+      // TODO: read old tokens
+    }
+    catch(e){
+      counter.addError("token.load");
+      console.error("token.load",e);
+      data = {};
+      oldTokens = {};
+    }    
   }
+  ///////////////////////////////////////////////////////////////////
+  // write
+  function writeToken(t){
+    const res = {
+      id: t.id,
+      pairId: t.pair.id,
+      symbol: t.symbol,
+      creationBlock: t.creationBlock,
+      firstPrice: t.firstPrice,      
+      totalLiquidity: t.totalLiquidity,
+      tradeVolumeUSD: t.tradeVolumeUSD,
+      txCount: t.txCount
+    }
+    // ethplorer
+    // holder track
+
+    return JSON.stringify(res);
+  }
+  ///////////////////////////////////////////////////////////////////
+  // srlz  
+  function writePair(p){
+    const res = {
+      id: p.id,
+      name: p.name,
+      createdAtBlocknumber: p.createdAtBlocknumber,
+      createdAtTimestamp: p.createdAtTimestamp,
+      lpCount: p.lpCount,
+      price: p.price,
+      reserveETH: p.reserveETH,
+      reserveUSD: p.reserveUSD,
+      totalSupply: p.totalSupply,
+      txCount: p.txCount,
+      volumeUSD: p.volumeUSD,
+      token0: {id: p.token0.id, symbol: p.token0.symbol},
+      token1: {id: p.token1.id, symbol: p.token1.symbol}
+    }
+    // ethplorer    
+    return JSON.stringify(res);
+  }
+  ///////////////////////////////////////////////////////////////////
   // save cache
   function save(){    
-    console.log('save tokens');
-    const strg = {
-      data:data,
-      oldTokens:oldTokens,
-    };
+    console.log('save tokens to redis');
+    // const strg = {
+    //   data:data,
+    //   oldTokens:oldTokens,
+    // };
     try{
       // save pairs to a dictionary first
-      // link by ID on load
       pairs ={};
+      // link by ID on load      
       for(let id in data){
         let t = data[id];
-        pairs[t.pair.id] = t.pair
+        pairs[t.pair.id] = t.pair;
+        let key = "token:" + id;
+        // add object
+        redis.client.set(key, writeToken(t));
+        // add holders        
+        console.log('save token-----------',key);
       }
-      let pairJsn = JSON.stringify(pairs);
-      fs.writeFile(CACHE_PAIR_FILENAME, pairJsn, function (err) {
-        if (err) {
-          counter.addError("token.writeFile");
-          return console.error('token error writeFile ' + err);      
-        }
-      });
-
-      // exclude pairs from writing files
-      jsn = JSON.stringify(strg, function(key, val){        
-        if (key=="pair") 
-          return val.id;
-      });
-      fs.writeFile(CACHE_FILENAME, jsn, function (err) {
-        if (err) {
-          counter.addError("token.writeFile");
-          return console.error('token error writeFile ' + err);      
-        }
-      });
+    // pairs to redis
+      for(let id in pairs){
+        let p = pairs[id];        
+        let key = "pair:" + id;
+        // add object
+        redis.client.set(key, writePair(p));
+        // add holders        
+        console.log('save pair-----------',key);
+      }      
     }catch(e){
-      counter.addError("token.writeFileException");
-      console.error('tokens exception writeFile '+ e);
+      counter.addError("token.saveException");
+      console.error('tokens exception save '+ e);
     }
   }
-  // load last 
-  //load();
-
+  
   /////////////////////////////////////
   async function update(){ 
     // no need to update
@@ -185,8 +245,8 @@ function Tokens(PREFIX, mon, wallets, counter){
     await Promise.all(updts);
     console.timeEnd("update_all_tokens");
 
-    // storage
-    //save();
+    // redis
+    save();
   }
   /////////////////////////////////////
   function resetToken(t){
@@ -230,21 +290,21 @@ function Tokens(PREFIX, mon, wallets, counter){
   /////////////////////////////////////
   async function updateToken(cur, latestBlock){    
     // ethplorer update PRICE???
-    const res = await ethplorer.getAddressInfo(cur.id);
-    if(res && !res.error){    
-      cur.ethplorer = res;
-      if(!cur.creationBlock && cur.ethplorer?.contractInfo?.transactionHash){
-        let tx = await web3.eth.getTransaction(cur.ethplorer.contractInfo.transactionHash).catch(e=>console.error(e));
-        if(tx){
-          cur.creationBlock = tx.blockNumber;
-          counter.addStat("token.foundCreationBlock");
-        }
-      }
-    }else{
-      counter.addError("token.ethplorerEmpty");
-      if(res.error)
-        console.log('ethplorer error:', res.error);
-    }
+    // const res = await ethplorer.getAddressInfo(cur.id);
+    // if(res && !res.error){    
+    //   cur.ethplorer = res;
+    //   if(!cur.creationBlock && cur.ethplorer?.contractInfo?.transactionHash){
+    //     let tx = await web3.eth.getTransaction(cur.ethplorer.contractInfo.transactionHash).catch(e=>console.error(e));
+    //     if(tx){
+    //       cur.creationBlock = tx.blockNumber;
+    //       counter.addStat("token.foundCreationBlock");
+    //     }
+    //   }
+    // }else{
+    //   counter.addError("token.ethplorerEmpty");
+    //   if(res.error)
+    //     console.log('ethplorer error:', res.error);
+    // }
 
     // get token from graph
     let ret = await dg.call(qGetToken.replace("{ADDRESS}", cur.id)).catch(e=>console.error("getToken",e));
@@ -408,14 +468,14 @@ function Tokens(PREFIX, mon, wallets, counter){
   function addTokenMetric(metrics, point, t, name){
     //if(t[name] > 0){ send megative values as well
       metrics[PREFIX + t.symbol +"."+ name] = t[name];
-      point.floatField(name, t[name]);
+      point.floatField(name, nrmlFloat(t[name]));
     //}
   }
   /////////////////////////////////////
   function addPairMetric(metrics, point, t, name){
     const nameCap = name.charAt(0).toUpperCase() + name.slice(1);
     metrics[PREFIX + t.symbol +'.pair'+nameCap] = t.pair[name];
-    point.floatField("pair_"+nameCap, t.pair[name]);
+    point.floatField("pair_"+nameCap, nrmlFloat(t.pair[name]));
   }
   /////////////////////////////////////
   function addTokenHolderDistribution(metrics, point, t){
@@ -432,7 +492,7 @@ function Tokens(PREFIX, mon, wallets, counter){
       type = type.toLowerCase();
       type = type.replace(/\s/g, '_');
       metrics[prefix + type] = f;
-      point.floatField("holders_distribution_"+type, f);
+      point.floatField("holders_distribution_"+type, nrmlFloat(f));
     }
   }
   
@@ -450,10 +510,10 @@ function Tokens(PREFIX, mon, wallets, counter){
     point.intField("holders_count_bot",  holders.length);
 
     //addInfluxPoint(points, "holders",{symbol:t.symbol},"count_bot", holders.length);
-    if(t.ethplorer?.tokenInfo?.holdersCount){
-      metrics[prefix +".holders_count.ethplorer"] = t.ethplorer.tokenInfo.holdersCount;
-      point.intField("holders_count_ethplorer",  t.ethplorer.tokenInfo.holdersCount);
-    }
+    // if(t.ethplorer?.tokenInfo?.holdersCount){
+    //   metrics[prefix +".holders_count.ethplorer"] = t.ethplorer.tokenInfo.holdersCount;
+    //   point.intField("holders_count_ethplorer",  t.ethplorer.tokenInfo.holdersCount);
+    // }
 
     // add supply balance of holders - for validation should be constant
     const posBalance = t.holderTrack.posBalance()
@@ -470,7 +530,7 @@ function Tokens(PREFIX, mon, wallets, counter){
   function sendTokenMetrics(t, client, inflx){    
     var metrics = {};
     var point = new Point('token').      
-      tag('symbol', t.symbol);
+      tag('symbol', t.symbol); 
       // add fields within metric funcs .intField("count",  value)
     
     // add calculated metrics
@@ -511,17 +571,17 @@ function Tokens(PREFIX, mon, wallets, counter){
     addTokenMetric(metrics, point, t, "totalLiquidity");
 
     // add age
-    if(t.ethplorer?.contractInfo?.timestamp){
-      t.ageHours = Math.round(Date.now() - (t.ethplorer.contractInfo.timestamp) / (3600));
-      addTokenMetric(metrics, point, t, "ageHours");        
-    }
+    // if(t.ethplorer?.contractInfo?.timestamp){
+    //   t.ageHours = Math.round(Date.now() - (t.ethplorer.contractInfo.timestamp) / (3600));
+    //   addTokenMetric(metrics, point, t, "ageHours");        
+    // }
     // add ETHPLORER tokenInfo
-    if(t.ethplorer?.tokenInfo?.price){
-      const prefix = PREFIX + t.symbol;
-      metrics[prefix +".ethplorer.price.marketCapUsd"] = t.ethplorer.tokenInfo.price.marketCapUsd;
-      metrics[prefix +".ethplorer.price.volume24h"] = t.ethplorer.tokenInfo.price.volume24h;
-      metrics[prefix +`.ethplorer.price.${t.ethplorer.tokenInfo.price.currency}`] = t.ethplorer.tokenInfo.price.rate;        
-    }
+    // if(t.ethplorer?.tokenInfo?.price){
+    //   const prefix = PREFIX + t.symbol;
+    //   metrics[prefix +".ethplorer.price.marketCapUsd"] = t.ethplorer.tokenInfo.price.marketCapUsd;
+    //   metrics[prefix +".ethplorer.price.volume24h"] = t.ethplorer.tokenInfo.price.volume24h;
+    //   metrics[prefix +`.ethplorer.price.${t.ethplorer.tokenInfo.price.currency}`] = t.ethplorer.tokenInfo.price.rate;        
+    // }
            
     //var tags = {'name': 'foo.bar', 'some.fancy.tag': 'somefancyvalue'};
     resetToken(t);
@@ -551,7 +611,8 @@ function Tokens(PREFIX, mon, wallets, counter){
   function sendMetrics(client, inflx){
     // tokens data iteration
     for ( let id in data ){ 
-      if(!data[id]){
+      const t = data[id];
+      if(!t){
         console.error(`token ${id} is not in data!!!!---------------`);
         counter.addError('token.noDataId');
       }
@@ -580,6 +641,7 @@ function Tokens(PREFIX, mon, wallets, counter){
     full:full,
     asJson:asJson,
     data: data,
+    load:load
   }
 }
 
