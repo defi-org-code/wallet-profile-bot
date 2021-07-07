@@ -1,6 +1,9 @@
 const config = require("./config");
 const axios = require('axios');
-const burnPrefix = '0x00000000000000000000';
+const burnPrefix = [
+  '0x00000000000000000000',
+  '0xdead'
+];
 
 /////////////////////////////////////
 function HolderTrack(name, contract, createdTS, decimals, counter){
@@ -10,15 +13,24 @@ function HolderTrack(name, contract, createdTS, decimals, counter){
 
   const apiUrl = `https://api.bloxy.info/token/token_holders_list?token=TOKEN&limit=5000&key=KEY&format=structure`;
   
+  function isBurnPrefix(address){
+    for (let p of burnPrefix){
+      if (address.substring(0,p.length).toLowerCase() === p) {
+        return true;
+      }
+    }
+  }
+  
+
   /////////////////////////////////////  
   async function update(latestBlock, dgDecimals){
     // patchy update
     if(!decimals)
       decimals = dgDecimals;
 
+    // backup
     oldHolders = holders;
-    holders = {};
-
+    
     var mapObj = {
       TOKEN: contract,
       KEY: config.keys.bloxy
@@ -36,11 +48,13 @@ function HolderTrack(name, contract, createdTS, decimals, counter){
         timeout: 3000
       });
       if(res.status === 200){
-        const oh = oldHolders? Object.keys(oldHolders) : null;
+        // reset holders
+        holders = {};
 
+        const oh = oldHolders? Object.keys(oldHolders) : null;
         for (const h of res.data){
           holders[h.address] = h;
-          if((!oh || !oh.includes(h.address)) && h.address.substring(0, 22) !== burnPrefix){
+          if((!oh || !oh.includes(h.address)) && !isBurnPrefix(h.address)){
             newHolders.push(h.address);
           }
         }
@@ -74,7 +88,7 @@ function HolderTrack(name, contract, createdTS, decimals, counter){
   /////////////////////////////////////
   function distribution(){
     if(!count()){    
-      console.log(`${t.symbol} holders is empty`);
+      console.log(`${name} holders is empty`);
     }
     
     let dis = {}
