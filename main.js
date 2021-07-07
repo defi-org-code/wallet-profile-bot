@@ -71,13 +71,17 @@ if (require.main === module) {
   console.log("VERSION", VERSION);
   console.log("WEB3_PROVIDER", config.network.ETH);
   console.log("GRAPHITE", config.graphiteUrl);
-  console.log("INFLUX", config.graphiteUrl);
+  console.log("INFLUX_URL", config.influxUrl);
+  console.log("INFLUX_BUCKET", config.influxBucket);
   console.log("MAX_TOKEN_MON", config.maxToken );
+  console.log("WALLET_TIMEOUT_MS", config.walletTimeoutMS );
+  console.log("WALLET_SEC_TTL", config.walletSecondsTTL );
+  
   //console.log("WALLET_BATCH_SIZE", process.env.WALLET_BATCH_SIZE);
   console.log("MEGA_HOLDER_BTC", config.megaHolderBTC);
   console.log("=========================================");
   //console.log(JSON.stringify(monkey1.options, null,2));
-  console.log("=========================================");
+  
 
   // anotation
   counter.addStat("process.started");
@@ -89,9 +93,9 @@ if (require.main === module) {
   next();
 
   // start server
-  const express = require('express')
-  const app = express()
-  const port = 3001
+  const express = require('express');
+  const app = express();
+  const port = 3001;
 
   app.get('/', (req, res) => {
     res.send('wallet-profile-bot OK!');
