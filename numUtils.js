@@ -4,6 +4,7 @@ const sum = arr => arr.reduce((a, b) => a + b, 0);
 module.exports = {
   nrmlFloat: function(f){    
     if(typeof f == "undefined" || typeof f == null ){
+      console.log('ntmlFloat got undefined/null');
       return -1;
     }
 
