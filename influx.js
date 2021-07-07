@@ -7,7 +7,7 @@ function Influx(tags){
   // You can generate a Token from the "Tokens Tab" in the UI
   const token = config.keys.influx_token;
   const org = 'xorbs';
-  const bucket = config.influxDB;
+  const bucket = config.influxBucket;
   const client = new InfluxDB({url: config.influxUrl, token: token});
   const writeApi = client.getWriteApi(org, bucket);
   writeApi.useDefaultTags(tags);
