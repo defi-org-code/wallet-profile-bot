@@ -78,7 +78,7 @@ function Tokens(PREFIX, mon, wallets, counter){
         //creationBlock:t.creationBlock,
         holders:t.holderTrack.count(),
         pairName:t.pair.name,
-        pairId:t.pairId,
+        pairId:t.pair.id,
         totalLiquidity:t.totalLiquidity,
         tradeVolumeUSD:t.tradeVolumeUSD
       });
@@ -476,6 +476,10 @@ function Tokens(PREFIX, mon, wallets, counter){
   }
   /////////////////////////////////////
   function addPairMetric(metrics, point, t, name){
+    if(!t.pair[name]){
+      counter.addStat("token.noMetric_"+name);
+      return ;
+    }
     const nameCap = name.charAt(0).toUpperCase() + name.slice(1);
     metrics[PREFIX + t.symbol +'.pair'+nameCap] = t.pair[name];
     point.floatField("pair_"+nameCap, nrmlFloat(t.pair[name]));
@@ -611,7 +615,7 @@ function Tokens(PREFIX, mon, wallets, counter){
     }
   }
   /////////////////////////////////////
-  function sendMetrics(client, inflx){
+  function sendMetrics(client, inflx){    
     // tokens data iteration
     for ( let id in data ){ 
       const t = data[id];
