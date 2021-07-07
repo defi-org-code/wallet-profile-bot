@@ -11,11 +11,16 @@ module.exports = {
     if(isNaN(f)){
       return -1;
     }
-    while( f.toString().indexOf('+') > -1 ){
+    // scale down    
+    while( f.toString().indexOf('e+') > -1 ){
       f /= 10;
     }
-
-    return parseFloat(f.toFixed(8));
+    // scale up
+    while( f.toString().indexOf('e-') > -1 ){
+      f *= 10;
+    }
+    return f;
+    //return parseFloat(f.toFixed(8));
   },
   asc: asc,
   quantile: (arr, q) => {
