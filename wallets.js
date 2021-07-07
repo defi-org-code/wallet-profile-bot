@@ -129,7 +129,7 @@ function Wallet(counter, config){
       method: 'get',
       url: url,
       //url: 'http://34.134.236.209:3000/test1',
-      timeout: config.walletTimeout    // seconds timeout      
+      timeout: config.walletTimeoutMS    // ms timeout      
     })
     .then(res => {
       if (res.status === 200){
@@ -226,10 +226,12 @@ function Wallet(counter, config){
       //counter.addStat("wallet.noExpired");
       return;
     }
-
-    console.log(`wallet.updateAll start - ${arr.length}/${Object.keys(data).length} are expired =========================`)
+    if(!isProduction){
+      console.log(`wallet.updateAll start - ${arr.length}/${Object.keys(data).length} are expired.`)
+    }
 
     counter.addStat("wallet.updateAll");
+    
     await executeBatch(arr, 0);
 
     // add count for each status
@@ -240,8 +242,7 @@ function Wallet(counter, config){
     console.log(`wallet.updateAll end ${Object.keys(data).length}  =========================`);
   }  
   /////////////////////////////////////
-  async function executeBatch(arr, start){    
-    
+  async function executeBatch(arr, start){        
     // create promise batch
     let batch = [];    
     let indx = start;
@@ -250,14 +251,16 @@ function Wallet(counter, config){
       //console.log(arr[indx])
       batch.push(updateWallet(arr[indx]));      
     }
-    //console.log(`wallet execute batch ${start}-${indx}\t/ ${arr.length}`);
+    if(!isProduction){
+      console.log(`wallet execute batch ${start}-${indx}\t/${arr.length}`);
+    }
     
     // block execution
-    //console.log("* promiseAll before: " + batch.length);
+    //console.log("wallet * promiseAll before: " + batch.length);
     if(batch.length){
       await Promise.all(batch);
     }
-    //console.log("* promiseAll after");
+    //console.log("wallet * promiseAll after");
     
     counter.addStat('wallet.executeBatch');
     if(indx && indx % 1000 === 0){
