@@ -52,11 +52,17 @@ function HolderTrack(name, contract, createdTS, decimals, counter){
         holders = {};
 
         const oh = oldHolders? Object.keys(oldHolders) : null;
-        for (const h of res.data){
-          holders[h.address] = h;
-          if((!oh || !oh.includes(h.address)) && !isBurnPrefix(h.address)){
-            newHolders.push(h.address);
+        try{
+          for (const h of res.data){
+            holders[h.address] = h;
+            if((!oh || !oh.includes(h.address)) && !isBurnPrefix(h.address)){
+              newHolders.push(h.address);
+            }
           }
+        }catch(e){
+          counter.addError('holdertrackBX.resData');
+          console.log('holdertrackBX', res);
+          console.error('holdertrackBX',e);
         }
       }else{
         console.error('bloxy holder list', res);
