@@ -2,7 +2,7 @@
 const fs = require('fs');
 const axios = require('axios');
 const { count } = require('console');
-const {nrmlFloat, asc, quantile, sum, std} = require('./numUtils');
+const {nrmlFloat, nrmlInt, asc, quantile, sum, std} = require('./numUtils');
 
 const CACHE_FILENAME = './cache/wallets.json';
 const isProduction = process.env.PRODUCTION==1;
@@ -48,9 +48,9 @@ function Wallet(counter, config){
   async function check(addresses, sourceToken){    
     for( a of addresses ){
       // limit addresses in debug    
-      if (!isProduction && Object.keys(data).length > 1000){
-        return ;
-      }
+      // if (!isProduction && Object.keys(data).length > 1000){
+      //   return ;
+      // }
 
       // add address
       if(!data[a]){
@@ -235,8 +235,8 @@ function Wallet(counter, config){
     await executeBatch(arr, 0);
 
     // add count for each status
-    const stat = status();
-    console.log(stat);
+    //const stat = status();
+    //console.log(stat);
     
     working = false;
     console.log(`wallet.updateAll end ${Object.keys(data).length}  =========================`);
@@ -370,12 +370,12 @@ function Wallet(counter, config){
 
     //$version.mon.$token.holders.valETH.sum
     prefix = prefix + '.holders.' + name + '.';
-    metrics[prefix + 'sum'] = nrmlFloat(arrSum,2);
-    metrics[prefix + 'max'] = nrmlFloat(arr.length? arr[arr.length-1] : 0);
+    metrics[prefix + 'sum'] = nrmlInt(arrSum,2);
+    metrics[prefix + 'max'] = nrmlInt(arr.length? arr[arr.length-1] : 0);
     metrics[prefix + 'min'] = nrmlFloat(arr.length? arr[0] : 0);
     metrics[prefix + 'avg'] = nrmlFloat(arrAvg);
     metrics[prefix + 'p95'] = nrmlFloat(arr.length? quantile(arr, .95) : 0);
-    metrics[prefix + 'p80'] = nrmlFloat(arr.length? quantile(arr, .80) : 0);
+    //metrics[prefix + 'p80'] = nrmlFloat(arr.length? quantile(arr, .80) : 0);
     metrics[prefix + 'med'] = nrmlFloat(arr.length? quantile(arr, .50) : 0);
     metrics[prefix + 'std'] = nrmlFloat(arr.length>1? std(arr, arrAvg) : 0);
 
@@ -385,7 +385,7 @@ function Wallet(counter, config){
     point.floatField(name+"_min",  metrics[prefix + 'min']);
     point.floatField(name+"_avg",  metrics[prefix + 'avg']);
     point.floatField(name+"_p95",  metrics[prefix + 'p95']);
-    point.floatField(name+"_p80",  metrics[prefix + 'p80']);
+    //point.floatField(name+"_p80",  metrics[prefix + 'p80']);
     point.floatField(name+"_med",  metrics[prefix + 'med']);
     point.floatField(name+"_std",  metrics[prefix + 'std']);
   }
