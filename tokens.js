@@ -3,7 +3,7 @@ let web3 = require('./web3Provider');
 const fs = require('fs');
 //const ethplorer = require('./ethplorer');
 const {Point} = require('@influxdata/influxdb-client');
-const {nrmlFloat} = require('./numUtils');
+const {nrmlFloat, ntmlInt} = require('./numUtils');
 
 // redis + async
 //const redis = require('./redis');
