@@ -83,7 +83,7 @@ function HolderTrack(name, contract, createdTS, decimals, counter){
   }
   /////////////////////////////////////
   function get(){    
-    return Object.keys(holders);
+    return Object.keys(holders || {});
   }
   /////////////////////////////////////
   function distribution(){

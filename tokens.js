@@ -525,7 +525,7 @@ function Tokens(PREFIX, mon, wallets, counter){
     // add supply balance of holders - for validation should be constant
     const posBalance = t.holderTrack.posBalance()
     metrics[prefix +".holders_posBalance"] = posBalance;
-    point.intField("holders_posBalance",  posBalance);
+    point.intField("holders_posBalance", nrmlFloat(posBalance));
 
     // add holders balance distribution     
     wallets.appendArrStats("holders_balanceBX", t.holderTrack.balanceArr(), metrics, point, prefix );
